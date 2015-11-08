@@ -1,0 +1,197 @@
+import urllib2
+import json
+import time
+import threading
+from flask import Flask
+from flask import render_template,request
+
+app=Flask(__name__)
+
+class AutoSqli(object):
+    def __init__(self,serverURL,serverPort):
+        self.serverURL=serverURL
+        self.serverPort=serverPort
+        self.taskid_url_Dict={}
+        self.taskid_log_Dict={}
+        self.taskid_status_Dict={}
+        self.taskid_threads_Dict={}
+        self.taskid_data_Dict={}
+    def NewTask(self,targetURL):
+        request=urllib2.Request(self.serverURL+":"+self.serverPort+
+                                "/task/new")
+        response=urllib2.urlopen(request)
+        responseData=json.loads(response.read())
+        if(responseData['success']==True):
+            taskid=responseData['taskid']
+            self.taskid_log_Dict[taskid]=time.strftime("[*%H:%M:%S]")+\
+                "Built a new task successfully,taskid is %s;<br>"\
+                % (taskid)
+            self.taskid_url_Dict[taskid]="empty"
+            self.taskid_status_Dict[taskid]="waiting targetUrl"
+            url=self.serverURL+":"+self.serverPort+"/scan/"+taskid+"/start"
+            request=urllib2.Request(url,'{"url":"'+targetURL+'"}')
+            request.add_header("Content-Type","application/json")
+            response=urllib2.urlopen(request)
+            responseData=json.loads(response.read())
+            if(responseData['success']==True):
+                self.taskid_url_Dict[taskid]=targetURL
+                self.taskid_log_Dict[taskid]=self.taskid_log_Dict[taskid]+\
+                    time.strftime("[*%H:%M:%S]")+\
+                    "Started a new scan of %s sucessfully!The engineid is %s;<br>"\
+                    % (targetURL,responseData['engineid'])
+                self.taskid_status_Dict[taskid]="scanning"
+                self.taskid_threads_Dict[taskid]=threading.Thread(target=self.Thread_Handle,\
+                                                                  args=(taskid,))
+                self.taskid_threads_Dict[taskid].start()
+                return "True"
+            else:
+                self.DeleteTask(taskid)
+                del self.taskid_url_Dict[taskid]
+                del self.taskid_log_Dict[taskid]
+                del self.taskid_status_Dict[taskid]
+                return "False"
+        else:
+            return "False"
+    def Thread_Handle(self,taskid):#must use statusr
+        request_status=urllib2.Request(self.serverURL+":"+self.serverPort+
+                                "/scan/"+taskid+"/status")
+        request_log=urllib2.Request(self.serverURL+":"+self.serverPort+
+                                "/scan/"+taskid+"/log")
+        request_data=urllib2.Request(self.serverURL+":"+self.serverPort+
+                                "/scan/"+taskid+"/data")
+        response_status=urllib2.urlopen(request_status)                   #----|
+        response_status_data=json.loads(response_status.read())           #    |
+        self.taskid_status_Dict[taskid]=response_status_data['status']    #----|     
+        while response_status_data['status']!="terminated":
+            time.sleep(2)
+            response_status=urllib2.urlopen(request_status)               #----|
+            response_status_data=json.loads(response_status.read())       #    |
+            self.taskid_status_Dict[taskid]=response_status_data['status']#----|  
+        
+        self.taskid_status_Dict['status']="terminated"
+            
+        response_log=urllib2.urlopen(request_log)
+        response_log_data=json.loads(response_log.read()) 
+        loglist=response_log_data["log"]
+        for log in loglist:
+            self.taskid_log_Dict[taskid]=self.taskid_log_Dict[taskid]+\
+                "[*"+log["time"]+"]"+log["message"]+";<br>"
+        response_data=urllib2.urlopen(request_data)
+        response_data=response_data.read()
+        response_data=json.loads(response_data)
+        response_data=response_data['data']
+        response_data=response_data[0]
+        response_data=response_data["value"][0]
+        result=""
+        #for key in response_data:
+            #if type(response_data[key])==str:
+                #result=result+key+"=>"+response_data[key]
+            #elif type(response_data[key])==unicode or type(response_data[key])==int:
+                #result=result+key+"=>"+str(response_data[key])
+            #elif type(response_data[key])==list:
+                #result=result+key+"=>"+self.list_2_str(response_data[key])
+            #elif type(response_data[key])==dict:
+                #result=result+key+"=>"+self.dict_2_str(response_data[key])
+            #elif not response_data[key]:
+                #result=result+key+"=>NULL"
+            #else:
+                #result=result+"Err:unknown type of data"
+            #result=result+"<br>"
+        for key in response_data:
+            if type(response_data[key])==str:
+                result=result+"<tr><td>"+key+"</td><td>"+response_data[key]+"</td></tr>"
+            elif type(response_data[key])==unicode or type(response_data[key])==int:
+                result=result+"<tr><td>"+key+"</td><td>"+str(response_data[key])+"</td></tr>"
+            elif type(response_data[key])==list:
+                result=result+"<tr><td>"+key+"</td><td>"+self.list_2_str(response_data[key])+"</td></tr>"
+            elif type(response_data[key])==dict:
+                result=result+"<tr><td rowspan=\"3\">"+key+"</td><td>"+self.dict_2_str(response_data[key])+"</td></tr>"
+            elif not response_data[key]:
+                result=result+"<tr><td>"+key+"</td><td>NULL</td></tr>"
+            else:
+                result=result+"<tr><td>Error</td><td>Unknown type of data</td></tr>"
+        self.taskid_data_Dict[taskid]=result
+    def DeleteTask(self,taskid):
+        request=urllib2.Request(self.serverURL+":"+self.serverPort+
+                                "/task/"+taskid+"/delete")                
+        response=urllib2.urlopen(request)
+        responseData=json.loads(response.read())
+        if(responseData['success']==True):
+            del self.taskid_log_Dict[taskid]
+            del self.taskid_data_Dict[taskid]
+            del self.taskid_status_Dict[taskid]
+            del self.taskid_threads_Dict[taskid]
+            del self.taskid_url_Dict[taskid]
+            return "True"
+        else:
+            return "False"
+    def SeeTaskList(self):
+        task_list=""
+        for taskid in self.taskid_url_Dict.keys():
+            task_list=task_list+taskid+"-->"+self.taskid_url_Dict[taskid]+"<br>"
+        return task_list
+    def list_2_str(self,var_list):
+        var_str=""
+        for value in var_list:
+            if type(value)==list:
+                var_str=var_str+"<td>"+self.list_2_str(value)+"</td>"
+            elif type(value)==dict:
+                var_str=var_str+"<td>"+self.dict_2_str(value)+"</td>"
+            else:
+                var_str=var_str+"<td>"+str(value)+"</td>"
+        return var_str
+    def dict_2_str(self,var_dict):
+        var_str=""
+        for key in var_dict:
+            if type(var_dict[key])==list:
+                var_str=var_str+"<tr><td>"+key+"</td><td>"+self.list_2_str(var_dict[key])+"</td></tr>"
+            elif type(var_dict[key])==dict:
+                var_str=var_str+"<tr><td>"+key+"</td><td>"+self.dict_2_str(var_dict[key])+"</td></tr>"
+            else:
+                var_str=var_str+"<tr><td>"+key+"</td><td>"+str(var_dict[key])+"</td></tr>"
+        return var_str    
+    
+autosqli=AutoSqli("http://127.0.0.1","8775")
+
+@app.route('/',methods=['GET'])
+def handle_get_data(): #!!!There is a problem:the task which is running,can not be deleted,so we should stop it first or hide "Delete" button
+    if "action" in request.args and request.args["action"]=="refresh":
+        html_tasks_area=""
+        for taskid in autosqli.taskid_url_Dict:
+            html_tasks_area=html_tasks_area+'<div class="taskitem">\
+            <p id="'+taskid+'_url">url:'+autosqli.taskid_url_Dict[taskid]+\
+                    '<span style="color:#fff;background-color:#cc6600;font-size:25px; margin-left:30px;padding:2px 2px 2px 2px;" onclick="see_task(\''+taskid+'\')">Data</span>'+\
+                    '<span style="color:red;background-color:#cc6600;font-size:25px; margin-left:30px;padding:2px 2px 2px 2px;" onclick="del_task(\''+taskid+'\')">Delete</span></p>\
+            <p id="'+taskid+'_taskid">taskid:'+taskid+'</p>\
+            <p id="'+taskid+'_status">status:'+autosqli.taskid_status_Dict[taskid]+'</p>\
+            <p id="'+taskid+'_log">log:'+autosqli.taskid_log_Dict[taskid]+'</p>\
+            </div>'
+        return html_tasks_area
+    elif "action" in request.args and request.args["action"]=="delete" \
+         and "taskid" in request.args and request.args["taskid"]!="":
+        return autosqli.DeleteTask(str(request.args["taskid"]))
+    elif "action" in request.args and request.args["action"]=="seedata"\
+         and "taskid" in request.args and request.args["taskid"]!="":
+        taskid=str(request.args["taskid"])
+        if taskid in autosqli.taskid_data_Dict.keys():
+        #return render_template("test2.html",data=p)
+            return render_template("test2.html",data=autosqli.taskid_data_Dict[taskid])
+        else:
+            return render_template("test.html",serversite="http://127.0.0.1:8775")
+    else:
+        return render_template("test.html",serversite="http://127.0.0.1:8775")
+
+@app.route('/',methods=['POST'])
+def handle_post_data():
+    if 'url' in request.json:
+        log=autosqli.NewTask(request.json['url'])
+        return log#render_template("test.html",log=log,serversite="http://127.0.0.1:8775")
+    #elif:condition
+    else:
+        return "illegal data."#render_template("test.html",log="no data given",serversite="http://127.0.0.1:8775")
+
+def returnlist():
+    return autosqli.SeeTaskList()
+    
+if __name__=='__main__':
+    app.run(debug=True)

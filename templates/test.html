@@ -1,0 +1,160 @@
+<html>
+<head>
+<title>TITLE</title>
+<script type="text/javascript" src="/static/ajax.js"></script>
+<style type="text/css">
+html { overflow-y:scroll;}
+
+body{
+width: 1000px;margin: 0 auto;clear: both;background-color:#E0E0E0;overflow: hidden;
+}
+li,ul{
+	list-style: none;white-space:nowrap;
+}
+.header{
+padding:0px;
+width:100%;
+float:left;
+clear:both;
+text-align:center;
+}
+.header p{
+font-size:3em;
+padding:10px 0px 10px 0;
+margin:0px;
+}
+.addtask_area{
+padding-top:40px;
+float:left;
+clear:left;
+width:200px;
+}
+.tasklist_area{
+float:left;
+clear:right;
+width:800px;
+
+}
+.tasklist_area p{
+font-size:20px;
+}
+.title{
+float:left;
+clear:both;
+}
+.title p{
+font-size:30px;
+padding-left:100px;
+}
+.taskitem{
+border:solid;
+
+float:left;
+clear:both;
+}
+.tasklist_area span{
+color:#fff
+background-color:#cc6600
+font-size:35px;
+margin-left:50px;
+padding:2px 2px 2px 2px;
+}
+</style>
+<script>
+
+function add_task()
+{
+var url="/";
+var send_content='{"url":"'+document.getElementById("addtask_url").value+'"}';
+loadXMLDocByPost(send_content,url,function(){
+if(xmlhttp.readyState==4&&xmlhttp.status==200)
+{
+if(xmlhttp.responseText=="False")
+{
+document.getElementById("tips").innerHTML="添加任务出错";
+}
+else
+{
+document.getElementById("tips").innerHTML="";
+update_taskbox();
+}
+}
+});
+}
+
+function update_taskbox()
+{
+var url="/";
+url=url+"?action=refresh";
+var task_box=document.getElementById("task_box");
+
+loadXMLDocByGet(url,function(){
+if(xmlhttp.readyState==4&&xmlhttp.status==200)
+{
+task_box.innerHTML=xmlhttp.responseText;
+}
+});
+}
+
+function del_task(taskid)
+{
+var url="/";
+url=url+"?action=delete&taskid="+taskid;
+
+loadXMLDocByGet(url,function(){
+if(xmlhttp.readyState==4&&xmlhttp.status==200)
+{
+update_taskbox();
+}
+});
+}
+function see_task(taskid)
+{
+//alert(taskid)
+window.open("/?action=seedata&taskid="+taskid);
+}
+function see_log(taskid)
+{
+var content=document.getElementById(taskid+"_log_content");
+if(content.innerHTML==""){
+var url="/";
+url=url+"?action=seelog&taskid="+taskid;
+loadXMLDocByGet(url,function(){
+if(xmlhttp.readyState==4&&xmlhttp.status==200)
+{
+content.innerHTML=xmlhttp.responseText;
+}
+});
+}
+else
+content.innerHTML="";
+}
+</script>
+</head>
+<body>
+<div class="header">
+<p>AutoSQLI</p>
+</div>
+<div class="addtask_area">
+<form action="/" method="POST" name="add_form">
+<p>在此添加任务<span id="tips" style="color:red"></span>
+<input id="addtask_url" type="text" value="" style="width:180px"></input>
+<input type="button" value="更新页面" onclick="update_taskbox()"></input>
+<input type="button" value="添加任务" onclick="add_task()"></input>
+</form>
+</div>
+<div class="tasklist_area" id="tasklist_area">
+<div class="title">
+<p>服务器地址：{{serversite}}</p>
+</div>
+<div class="task_box" id="task_box">
+</div>
+<!--<div class="taskitem">
+<p id="text">url:</p>
+<p>taskid:</p>
+<p>status:</p>
+<p>{% if log %}{{ log|safe}}{% endif %}</p>
+</div>-->
+</div>
+</body>
+</html>
