@@ -1,160 +1,140 @@
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>AutoSqli</title>
-<script type="text/javascript" src="/static/ajax.js"></script>
-<style type="text/css">
-html { overflow-y:scroll;}
+<link href="/static/css/zxmk.css" rel="stylesheet" type="text/css"/>
+<script src="/static/js/core.js" type="text/javascript"></script>
+<script src="/static/js/jquery-1.11.3.min.js" type="text/javascript"></script>
 
-body{
-width: 1000px;margin: 0 auto;clear: both;background-color:#E0E0E0;overflow: hidden;
-}
-li,ul{
-	list-style: none;white-space:nowrap;
-}
-.header{
-padding:0px;
-width:100%;
-float:left;
-clear:both;
-text-align:center;
-}
-.header p{
-font-size:3em;
-padding:10px 0px 10px 0;
-margin:0px;
-}
-.addtask_area{
-padding-top:40px;
-float:left;
-clear:left;
-width:200px;
-}
-.tasklist_area{
-float:left;
-clear:right;
-width:800px;
-
-}
-.tasklist_area p{
-font-size:20px;
-}
-.title{
-float:left;
-clear:both;
-}
-.title p{
-font-size:30px;
-padding-left:100px;
-}
-.taskitem{
-border:solid;
-
-float:left;
-clear:both;
-}
-.tasklist_area span{
-color:#fff
-background-color:#cc6600
-font-size:35px;
-margin-left:50px;
-padding:2px 2px 2px 2px;
-}
-</style>
-<script>
-
-function add_task()
-{
-var url="/";
-var send_content='{"url":"'+document.getElementById("addtask_url").value+'"}';
-loadXMLDocByPost(send_content,url,function(){
-if(xmlhttp.readyState==4&&xmlhttp.status==200)
-{
-if(xmlhttp.responseText=="False")
-{
-document.getElementById("tips").innerHTML="添加任务出错";
-}
-else
-{
-document.getElementById("tips").innerHTML="";
-update_taskbox();
-}
-}
-});
-}
-
-function update_taskbox()
-{
-var url="/";
-url=url+"?action=refresh";
-var task_box=document.getElementById("task_box");
-
-loadXMLDocByGet(url,function(){
-if(xmlhttp.readyState==4&&xmlhttp.status==200)
-{
-task_box.innerHTML=xmlhttp.responseText;
-}
-});
-}
-
-function del_task(taskid)
-{
-var url="/";
-url=url+"?action=delete&taskid="+taskid;
-
-loadXMLDocByGet(url,function(){
-if(xmlhttp.readyState==4&&xmlhttp.status==200)
-{
-update_taskbox();
-}
-});
-}
-function see_task(taskid)
-{
-//alert(taskid)
-window.open("/?action=seedata&taskid="+taskid);
-}
-function see_log(taskid)
-{
-var content=document.getElementById(taskid+"_log_content");
-if(content.innerHTML==""){
-var url="/";
-url=url+"?action=seelog&taskid="+taskid;
-loadXMLDocByGet(url,function(){
-if(xmlhttp.readyState==4&&xmlhttp.status==200)
-{
-content.innerHTML=xmlhttp.responseText;
-}
-});
-}
-else
-content.innerHTML="";
-}
-</script>
 </head>
 <body>
-<div class="header">
-<p>AutoSQLI</p>
+<div class="top-nav">
+  <div class="w1000 clearfix">
+    <!--<div class="topLogo"><img src="images/xx-logo.jpg"  alt="logo"/></div>
+    <div class="topLogin"> <a href="#">登陆</a>┊<a href="#">注册</a> </div>-->
+    <a href="/">AutoSqli Tools</a>
+    <a href="quickbuild.html" style="font-size:15px;padding-left:200px;">Quickly Bulid</a>
+    <a href="customtask.html" style="font-size:15px;padding-left:60px;">Custom Task</a>
+    <a href="tasklist.html" style="font-size:15px;padding-left:60px;">Task List</a>
+    <a href="instructions.html" style="font-size:15px;padding-left:60px;">Instructions</a>
+  </div>
 </div>
-<div class="addtask_area">
-<form action="/" method="POST" name="add_form">
-<p>在此添加任务<span id="tips" style="color:red"></span>
-<input id="addtask_url" type="text" value="" style="width:180px"></input>
-<input type="button" value="更新页面" onclick="update_taskbox()"></input>
-<input type="button" value="添加任务" onclick="add_task()"></input>
-</form>
+<div class="index-con" style="z-index: 0">
+  <ul>
+    <li class="in-kct in-course"> <a href="quickbuild.html" title="quicklybuild">
+      <div class="in-block"> <i class="bigger"></i> <span class="ch show" style="display: block;float:left;">Quickly Build</span> <i class="in-none"></i> <span class="in-text" style="display: none;">
+        <p><em>Use default settings</em></p>
+       
+        </span> </div>
+      </a> </li>
+    <li class="in-kct in-quest"> 
+      <a href="customtask.html" title="customtask">
+        <div class="in-block"> 
+          <i class=""></i> <span class="ch" style="display: inline;">Custom Task</span> 
+          <i class="in-none"></i> 
+          <span class="in-text" style="display: none; width: 280px; left: 30px"><p><em>Use custom settings</em></p></span> 
+        </div>
+      </a> 
+    </li>
+    <li class="in-jbk in-plan"> 
+      <a href="tasklist.html" title="tasklist">
+        <div class="in-block"> 
+          <i style="display: block;"></i> <span style="display: inline;">Task List</span> 
+          <i class="in-none toLeft1" style="display: none;"></i> <span class="in-text" style="display: none;">
+          <p>Check all tasks</p>
+          </span> 
+        </div>
+      </a> 
+    </li>
+    <li class="in-jbk in-report"> 
+      <a href="instructions.html" title="instructions">
+      <div class="in-block"> 
+        <i style="display: block;"></i> <span style="display: inline;">Instructions</span> 
+        <i class="in-none toLeft2" style="display: none;"></i> <span class="in-text" style="display: none;">
+        <p>Check how let this work</p>
+        </span> 
+      </div>
+      </a> 
+    </li>
+    <!--<li class="in-jbk in-plan"> <a href="#" title="每日一练">
+      <div class="in-block"> <i style="display: block;"></i> <span style="display: inline;">每日一练</span> <i class="in-none toLeft1" style="display: none;"></i> <span class="in-text" style="display: none;">
+        <p>完备的规划是指引</p>
+        <p>我们取得成功的前提</p>
+        </span> </div>
+      </a> </li>
+    <li class="in-jbk in-report"> <a href="#" title="真题演练">
+      <div class="in-block"> <i style="display: block;"></i> <span style="display: inline;">真题演练</span> <i class="in-none toLeft2" style="display: none;"></i> <span class="in-text" style="display: none;">
+        <p>预测成绩</p>
+        <p>知识点强弱项目分析</p>
+        </span> </div>
+      </a> </li>
+    <li class="in-zxl in-forma"> <a href="#" title="精选试题">
+      <div class="in-block"> <i style="display: block;"></i> <span style="display: inline;">精选试题</span> <i class="in-none toLeft0 toLeft4" style="display: none;"></i> <span class="in-text" style="display: none;">
+        <p>更简洁、更简单、更强大、更专业</p>
+     
+        </span> </div>
+      </a> </li>
+    <li class="in-zxl in-means"> <a href="#" title="资料">
+      <div class="in-block"> <i></i> <span>资料</span> <i class="in-none"></i> <span class="in-text">
+        <p>辅导资料、常用软件</p>
+        <p>应有尽有</p>
+        </span> </div>
+      </a> </li>
+    <li class="in-jbk in-client"> <a href="#" target="_blank" title="微社区">
+      <div class="in-block"> <i></i> <span>微社区</span> <i class="in-none"></i> <span class="in-text">
+        <p>在线交流</p>
+        <p>让你学习考试更简单</p>
+        </span> </div>
+      </a> </li>-->
+  </ul>
 </div>
-<div class="tasklist_area" id="tasklist_area">
-<div class="title">
-<p>服务器地址：{{serversite}}</p>
-</div>
-<div class="task_box" id="task_box">
-</div>
-<!--<div class="taskitem">
-<p id="text">url:</p>
-<p>taskid:</p>
-<p>status:</p>
-<p>{% if log %}{{ log|safe}}{% endif %}</p>
-</div>-->
-</div>
+<script>
+    seajs.use('jquery',function($) {
+        $(function () {
+             //
+            $(".index-con .in-kct").hover(function() {
+                $(this).find('i:first').addClass('smaller').removeClass('bigger')
+                $(this).find('span:first').fadeOut('')
+                $(this).find('.in-text').show('fast').addClass('show')
+                $(this).find('.ch').removeClass('')
+            }, function() {
+                $(this).find('i:first').removeClass('smaller').addClass('bigger')
+                $(this).find('span:first').fadeIn('')
+                $(this).find('.in-text').hide('').removeClass('fast')
+                $(this).find('.ch').addClass('show')
+            })
+            $(".index-con .in-jbk").hover(function() {
+                $(this).find('i:first').addClass('hide')
+                $(this).find('span:first').hide('')
+                $(this).find('.in-text').show('').addClass('show')
+                var num = $(this).index('.in-jbk') + 1;
+                $(this).find('.in-none').show('').addClass('toLeft' + num).removeClass('toRight' + num)
+                $(this).find('.ch1').removeClass('show')
+            }, function() {
+                $(this).find('i:first').addClass('hide')
+                $(this).find('span:first').fadeIn('')
+                $(this).find('.in-text').hide('').removeClass('show')
+                var num = $(this).index('.in-jbk') + 1;
+                $(this).find('.in-none').show().addClass('toRight' + num).removeClass('toLeft' + num)
+                $(this).find('.ch1').addClass('show')
+            })
+            $(".index-con .in-zxl").hover(function() {
+                $(this).find('i:first').addClass('hide')
+                $(this).find('span:first').hide('')
+                $(this).find('.in-text').show().addClass('show')
+                var nums = $(this).index('.in-zxl') + 1;
+                $(this).find('.in-none').show().addClass('toLeft4').removeClass('toRight4')
+                $(this).find('.ch2').removeClass('show')
+            }, function() {
+                $(this).find('i:first').addClass('hide')
+                $(this).find('span:first').fadeIn('fast')
+                $(this).find('.in-text').hide().removeClass('show')
+                $(this).find('.in-none').show().addClass('toRight4').removeClass('toLeft4')
+                $(this).find('.ch2').addClass('show')
+            });
+        });
+    })
+</script>
 </body>
 </html>

@@ -2,51 +2,50 @@ import urllib2
 import json
 import threading
 import time
+import re
 
-class AutoSqli(object):
-    def __init__(self,serverURL,serverPort):
-        self.serverURL=serverURL
-        self.serverPort=serverPort
-        self.taskidDict={}
-    def NewTask(self,targetURL):
-        request=urllib2.Request(self.serverURL+":"+self.serverPort+
-                                "/task/new")
-        response=urllib2.urlopen(request)
-        responseData=json.loads(response.read())
-        if(responseData['success']==True):
-            taskid=responseData['taskid']
-            print "Built a new task successfully,taskid is %s.Try to start scan of targetURL:%s" % (taskid,targetURL)
-            self.taskidDict[taskid]="empty"
-            url=self.serverURL+":"+self.serverPort+"/scan/"+taskid+"/start"
-            request=urllib2.Request(url,'{"url":"'+targetURL+'"}')
-            request.add_header("Content-Type","application/json")
-            response=urllib2.urlopen(request)
-            responseData=json.loads(response.read())
-            if(responseData['success']==True):
-                self.taskidDict[taskid]=targetURL
-                print "Started a new scan of %s sucessfully!The engineid is %s" % (targetURL,responseData['engineid'])
+def URL_Dedu(urldic,targetURL):
+    #if not len(self.taskid_url_Dict):
+        #return 1
+    m=re.match('(http://)|(https://)',targetURL)
+    if m is None:
+        targetURL="http://"+targetURL
+    option_list=[]
+    m=re.match('(.+)\?',targetURL)
+    if m is None:
+        return 0         # return 0 means illegal URL 
+    else:
+        option_list.append(m.groups()[0])
+    temp_list=re.findall('(\&\w+=)',targetURL)
+    for i in temp_list:
+        if i!="":
+            option_list.append(i)
+    temp_list=re.findall('(\?\w+=)',targetURL)
+    for i in temp_list:
+        if i!="":
+            option_list.append(i)  
+    print option_list
+    result=[]
+    for key in urldic:
+        url=urldic[key]
+        status=True
+        for reg in option_list:
+            print reg
+            print url
+            if '&' in reg or '?' in reg:
+                print "yes"
+                m=re.search('\\'+reg,url)
             else:
-                print("Failed to start a new scan of %s." % targetURL)
-            return taskid
-        else:
-            print("Failed to build a new task")
-    def deletetask(self,taskid):
-        request=urllib2.Request(self.serverURL+":"+self.serverPort+
-                                "/task/"+taskid+"/delete")
-        response=urllib2.urlopen(request)
-        print response.read()
-    def showlist(self):
-        request=urllib2.Request(self.serverURL+":"+self.serverPort+
-                                "/option/31c1c8bcf87f892d/list")#+taskid+"/delete")
-        response=urllib2.urlopen(request)
-        data=response.read()
-        print data
-        #data=json.loads(data)
-        #data=data['data']
-        #data=data[0]
-        #data=data["value"][0]
-        #temp="ssss="+\
-            #data["dbms_version"][0]
-        #print temp
-myautosqli=AutoSqli("http://127.0.0.1","8775")
-myautosqli.showlist()
+                m=re.search(reg,url)
+            if m is None:
+                status=False
+                break
+        if status:
+            result.append(url)
+    print result
+    if len(result):
+        return -1      #return -1 means find url is similar to targeturl
+    else:
+        return 1
+dict1={"1":"http://www.baidu.com?id=1"}
+print URL_Dedu(dict1,"www.baidu.com?id=1")

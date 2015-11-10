@@ -188,6 +188,9 @@ class AutoSqli(object):
             "keepAlive": False
         }
     def NewTask(self,targetURL):
+        m=re.match('(http://)|(https://)',targetURL)
+        if m is None:
+            targetURL="http://"+targetURL        
         repeated=self.URL_Dedu(targetURL)
         if repeated != 1:
             return "False"
@@ -375,7 +378,10 @@ class AutoSqli(object):
             url=self.taskid_url_Dict[key]
             status=True
             for reg in option_list:
-                m=re.search('\\'+reg,url)
+                if '&' in reg or '?' in reg:
+                    m=re.search('\\'+reg,url)
+                else:
+                    m=re.search(reg,url)
                 if m is None:
                     status=False
                     break
@@ -391,39 +397,97 @@ autosqli=AutoSqli("http://127.0.0.1","8775")
 
 @app.route('/',methods=['GET'])
 def handle_get_data(): #!!!There is a problem:the task which is running,can not be deleted,so we should stop it first or hide "Delete" button
+    
+    #if "action" in request.args and request.args["action"]=="refresh":
+        #html_tasks_area=""
+        #for taskid in autosqli.taskid_url_Dict:
+            #html_tasks_area=html_tasks_area+'<div class="taskitem">\
+            #<p id="'+taskid+'_url">url:'+autosqli.taskid_url_Dict[taskid]+\
+                    #'<span style="color:#fff;background-color:#cc6600;font-size:25px; margin-left:30px;padding:2px 2px 2px 2px;" onclick="see_task(\''+taskid+'\')">Data</span>'+\
+                    #'<span style="color:red;background-color:#cc6600;font-size:25px; margin-left:30px;padding:2px 2px 2px 2px;" onclick="del_task(\''+taskid+'\')">Delete</span></p>\
+            #<p id="'+taskid+'_taskid">taskid:'+taskid+'</p>\
+            #<p id="'+taskid+'_status">status:'+autosqli.taskid_status_Dict[taskid]+'</p>\
+            #<p id="'+taskid+'_log" onclick="see_log(\''+taskid+'\')">log:[click to expand]</p>\
+            #<p id="'+taskid+'_log_content"></p>\
+            #</div>'
+        #return html_tasks_area
+    #elif "action" in request.args and request.args["action"]=="delete" \
+         #and "taskid" in request.args and request.args["taskid"]!="":
+        #return autosqli.DeleteTask(str(request.args["taskid"]))
+    #elif "action" in request.args and request.args["action"]=="seedata"\
+         #and "taskid" in request.args and request.args["taskid"]!="":
+        #taskid=str(request.args["taskid"])
+        #if taskid in autosqli.taskid_data_Dict.keys():
+            #return render_template("data.html",data=autosqli.taskid_data_Dict[taskid])
+        #else:
+            #return render_template("index.html",serversite="http://127.0.0.1:8775")
+    #elif "action" in request.args and request.args["action"]=="seelog"\
+         #and "taskid" in request.args and request.args["taskid"]!="":
+        #taskid=str(request.args["taskid"])
+        #return autosqli.taskid_log_Dict[taskid];
+    #else:
+    return render_template("index.html")
+@app.route('/quickbuild.html',methods=['GET'])
+def handle_quickbuild():
+    return render_template("quickbuild.html")
+
+@app.route('/customtask.html',methods=['GET'])
+def handle_customtask():
+    return render_template("customtask.html")
+
+@app.route('/tasklist.html',methods=['GET'])
+def handle_tasklist():
     if "action" in request.args and request.args["action"]=="refresh":
-        html_tasks_area=""
+        return_html=""
         for taskid in autosqli.taskid_url_Dict:
-            html_tasks_area=html_tasks_area+'<div class="taskitem">\
-            <p id="'+taskid+'_url">url:'+autosqli.taskid_url_Dict[taskid]+\
-                    '<span style="color:#fff;background-color:#cc6600;font-size:25px; margin-left:30px;padding:2px 2px 2px 2px;" onclick="see_task(\''+taskid+'\')">Data</span>'+\
-                    '<span style="color:red;background-color:#cc6600;font-size:25px; margin-left:30px;padding:2px 2px 2px 2px;" onclick="del_task(\''+taskid+'\')">Delete</span></p>\
-            <p id="'+taskid+'_taskid">taskid:'+taskid+'</p>\
-            <p id="'+taskid+'_status">status:'+autosqli.taskid_status_Dict[taskid]+'</p>\
-            <p id="'+taskid+'_log" onclick="see_log(\''+taskid+'\')">log:[click to expand]</p>\
-            <p id="'+taskid+'_log_content"></p>\
-            </div>'
-        return html_tasks_area
+            return_html=return_html+'<div class="task_box">'+\
+                '<p><span><strong>TargetURL:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                autosqli.taskid_url_Dict[taskid]+\
+                '</span></p><p><span><strong>Status:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                autosqli.taskid_status_Dict[taskid]+'</span></p>'+\
+                '<p class="button" onclick="see_log(\''+taskid+'\')">'+\
+                '<strong>Log</strong></p>'+\
+                '<p class="button" onclick="see_data(\''+taskid+'\')">'+\
+                '<strong>Data</strong></p>'+\
+                '<p class="button" onclick="delete(\''+taskid+'\')">'+\
+                '<strong>Delete</strong></p></div>'            
+        return return_html
     elif "action" in request.args and request.args["action"]=="delete" \
          and "taskid" in request.args and request.args["taskid"]!="":
         return autosqli.DeleteTask(str(request.args["taskid"]))
-    elif "action" in request.args and request.args["action"]=="seedata"\
-         and "taskid" in request.args and request.args["taskid"]!="":
-        taskid=str(request.args["taskid"])
-        if taskid in autosqli.taskid_data_Dict.keys():
-        #there is a problem here,if no data in dict,it shouldn't return a page
-            return render_template("data.html",data=autosqli.taskid_data_Dict[taskid])
-        else:
-            return render_template("index.html",serversite="http://127.0.0.1:8775")
+    #elif "action" in request.args and request.args["action"]=="seedata"\
+         #and "taskid" in request.args and request.args["taskid"]!="":
+        #taskid=str(request.args["taskid"])
+        #if taskid in autosqli.taskid_data_Dict.keys():
+            #return render_template("data.html",data=autosqli.taskid_data_Dict[taskid])
+        #else:
+            #return render_template("index.html",serversite="http://127.0.0.1:8775")
     elif "action" in request.args and request.args["action"]=="seelog"\
          and "taskid" in request.args and request.args["taskid"]!="":
         taskid=str(request.args["taskid"])
         return autosqli.taskid_log_Dict[taskid];
     else:
-        return render_template("index.html",serversite="http://127.0.0.1:8775")
+        return_html=""
+        for taskid in autosqli.taskid_url_Dict:
+            return_html=return_html+'<div class="task_box">'+\
+                '<p><span><strong>TargetURL:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                autosqli.taskid_url_Dict[taskid]+\
+                '</span></p><p><span><strong>Status:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                autosqli.taskid_status_Dict[taskid]+'</span></p>'+\
+                '<p class="button" onclick="see_log(\''+taskid+'\')">'+\
+                '<strong>Log</strong></p>'+\
+                '<p class="button" onclick="see_data(\''+taskid+'\')">'+\
+                '<strong>Data</strong></p>'+\
+                '<p class="button" onclick="delete(\''+taskid+'\')">'+\
+                '<strong>Delete</strong></p></div>'            
+        return render_template("tasklist.html",html=return_html)
 
-@app.route('/',methods=['POST'])
-def handle_post_data():
+@app.route('/instructions.html',methods=['GET'])
+def handle_instructions():
+    return render_template("instructions.html")
+
+@app.route('/quickbuild.html',methods=['POST'])
+def handle_post_quickbuild():
     if 'url' in request.json:
         log=autosqli.NewTask(request.json['url'])
         return log#render_template("index.html",log=log,serversite="http://127.0.0.1:8775")
