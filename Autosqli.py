@@ -267,7 +267,7 @@ class AutoSqli(object):
             if key !="conf" and key!="data":
                 response_data[key]=str(response_data[key])
         html_table1='<table width="200" border="1" id="table1">'+\
-            '<caption>funde</caption><tr><td>DBMS</td><td colspan="2">'+response_data["dbms"]+'</td></tr>'+\
+            '<caption>Conventional data</caption><tr><td>DBMS</td><td colspan="2">'+response_data["dbms"]+'</td></tr>'+\
             '<tr><td>Suffix</td><td colspan="2">'+response_data["suffix"]+'</td></tr><tr><td>Clause</td>'+\
             '<td colspan="2">'+response_data["clause"]+'</td></tr>'+\
             '<tr><td>ptype</td><td colspan="2">'+response_data["ptype"]+'</td></tr>'+\
@@ -293,7 +293,7 @@ class AutoSqli(object):
             '<tr><td>OS</td><td colspan="2">'+response_data["os"]+'</td></tr></table>'
         response_data=response_data["data"]
         html_table2='<table width="200" border="1" id="table2">'+\
-            '<caption>payload</caption><tr><th style="width:80px">number</th><th style="width:100px">item</th><th>details</th></tr>'
+            '<caption>Payloads Info</caption><tr><th style="width:80px">number</th><th style="width:200px">item</th><th>details</th></tr>'
         for key in response_data:
             for item in response_data[key]:
                 if not type(response_data[key][item]):
@@ -412,24 +412,24 @@ def handle_get_data(): #!!!There is a problem:the task which is running,can not 
         taskid=str(request.args["taskid"])
         if taskid in autosqli.taskid_data_Dict.keys():
         #there is a problem here,if no data in dict,it shouldn't return a page
-            return render_template("test2.html",data=autosqli.taskid_data_Dict[taskid])
+            return render_template("data.html",data=autosqli.taskid_data_Dict[taskid])
         else:
-            return render_template("test.html",serversite="http://127.0.0.1:8775")
+            return render_template("index.html",serversite="http://127.0.0.1:8775")
     elif "action" in request.args and request.args["action"]=="seelog"\
          and "taskid" in request.args and request.args["taskid"]!="":
         taskid=str(request.args["taskid"])
         return autosqli.taskid_log_Dict[taskid];
     else:
-        return render_template("test.html",serversite="http://127.0.0.1:8775")
+        return render_template("index.html",serversite="http://127.0.0.1:8775")
 
 @app.route('/',methods=['POST'])
 def handle_post_data():
     if 'url' in request.json:
         log=autosqli.NewTask(request.json['url'])
-        return log#render_template("test.html",log=log,serversite="http://127.0.0.1:8775")
+        return log#render_template("index.html",log=log,serversite="http://127.0.0.1:8775")
     #elif:condition
     else:
-        return "illegal data."#render_template("test.html",log="no data given",serversite="http://127.0.0.1:8775")
+        return "illegal data."#render_template("index.html",log="no data given",serversite="http://127.0.0.1:8775")
 
 def returnlist():
     return autosqli.SeeTaskList()
