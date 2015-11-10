@@ -17,176 +17,7 @@ class AutoSqli(object):
         self.taskid_status_Dict={}
         self.taskid_threads_Dict={}
         self.taskid_data_Dict={}
-        self.taskid_options_Dict={
-            "crawlDepth": None, 
-            "osShell": False, 
-            "getUsers": False, 
-            "getPasswordHashes": False, 
-            "excludeSysDbs": False, 
-            "uChar": None, 
-            "regData": None, 
-            "cpuThrottle": 5, 
-            "prefix": None, 
-            "code": None, 
-            "googlePage": 1, 
-            "query": None, 
-            "randomAgent": False, 
-            "delay": 0, 
-            "isDba": False, 
-            "requestFile": None, 
-            "predictOutput": False, 
-            "wizard": False, 
-            "stopFail": False, 
-            "forms": False, 
-            "taskid": "73674cc5eace4ac7", 
-            "skip": None, 
-            "dropSetCookie": False, 
-            "smart": False, 
-            "risk": 1, 
-            "sqlFile": None, 
-            "rParam": None, 
-            "getCurrentUser": False, 
-            "notString": None, 
-            "getRoles": False, 
-            "getPrivileges": False, 
-            "testParameter": None, 
-            "tbl": None, 
-            "charset": None, 
-            "trafficFile": None, 
-            "osSmb": False, 
-            "level": 1, 
-            "secondOrder": None, 
-            "pCred": None, 
-            "timeout": 30, 
-            "firstChar": None, 
-            "updateAll": False, 
-            "binaryFields": False, 
-            "checkTor": False, 
-            "aType": None, 
-            "direct": None, 
-            "saFreq": 0, 
-            "tmpPath": None, 
-            "titles": False, 
-            "getSchema": False, 
-            "identifyWaf": False, 
-            "checkWaf": False, 
-            "regKey": None, 
-            "limitStart": None, 
-            "loadCookies": None, 
-            "dnsName": None, 
-            "csvDel": ",", 
-            "oDir": None, 
-            "osBof": False, 
-            "invalidLogical": False, 
-            "getCurrentDb": False, 
-            "hexConvert": False, 
-            "answers": None, 
-            "host": None, 
-            "dependencies": False, 
-            "cookie": None, 
-            "proxy": None, 
-            "regType": None, 
-            "optimize": False, 
-            "limitStop": None, 
-            "mnemonics": None, 
-            "uFrom": None, 
-            "noCast": False, 
-            "testFilter": None, 
-            "eta": False, 
-            "threads": 1, 
-            "logFile": None, 
-            "os": None, 
-            "col": None, 
-            "rFile": None, 
-            "verbose": 1, 
-            "aCert": None, 
-            "torPort": None, 
-            "privEsc": False, 
-            "forceDns": False, 
-            "getAll": False, 
-            "api": True, 
-            "url": None, 
-            "invalidBignum": False, 
-            "regexp": None, 
-            "getDbs": False, 
-            "freshQueries": False, 
-            "uCols": None, 
-            "smokeTest": False, 
-            "pDel": None, 
-            "wFile": None, 
-            "udfInject": False, 
-            "tor": False, 
-            "forceSSL": False, 
-            "beep": False, 
-            "saveCmdline": False, 
-            "configFile": None, 
-            "scope": None, 
-            "dumpAll": False, 
-            "torType": "HTTP", 
-            "regVal": None, 
-            "dummy": False, 
-            "commonTables": False, 
-            "search": False, 
-            "skipUrlEncode": False, 
-            "referer": None, 
-            "liveTest": False, 
-            "purgeOutput": False, 
-            "retries": 3, 
-            "extensiveFp": False, 
-            "dumpTable": False, 
-            "database": "/tmp/sqlmapipc-EmjjlQ", 
-            "batch": True, 
-            "headers": None, 
-            "flushSession": False, 
-            "osCmd": None, 
-            "suffix": None, 
-            "dbmsCred": None, 
-            "regDel": False, 
-            "shLib": None, 
-            "NoneConnection": False, 
-            "timeSec": 5, 
-            "msfPath": None, 
-            "noEscape": False, 
-            "getHostname": False, 
-            "sessionFile": None, 
-            "disableColoring": True, 
-            "getTables": False, 
-            "agent": None, 
-            "lastChar": None, 
-            "string": None, 
-            "dbms": None, 
-            "tamper": None, 
-            "hpp": False, 
-            "runCase": None, 
-            "osPwn": False, 
-            "evalCode": None, 
-            "cleanup": False, 
-            "getBanner": False, 
-            "profile": False, 
-            "regRead": False, 
-            "bulkFile": None, 
-            "safUrl": None, 
-            "db": None, 
-            "dumpFormat": "CSV", 
-            "alert": None, 
-            "user": None, 
-            "parseErrors": False, 
-            "aCred": None, 
-            "getCount": False, 
-            "dFile": None, 
-            "data": None, 
-            "regAdd": False, 
-            "ignoreProxy": False, 
-            "getColumns": False, 
-            "mobile": False, 
-            "googleDork": None, 
-            "sqlShell": False, 
-            "pageRank": False, 
-            "tech": "BEUSTQ", 
-            "textOnly": False, 
-            "commonColumns": False, 
-            "keepAlive": False
-        }
+        self.taskid_options_Dict={}
     def NewTask(self,targetURL):
         m=re.match('(http://)|(https://)',targetURL)
         if m is None:
@@ -230,7 +61,6 @@ class AutoSqli(object):
                 return "False"
         else:
             return "False"
-        
     def Thread_Handle(self,taskid):#must use statusr
         request_status=urllib2.Request(self.serverURL+":"+self.serverPort+
                                 "/scan/"+taskid+"/status")
@@ -255,8 +85,6 @@ class AutoSqli(object):
                 self.taskid_log_Dict[taskid]=self.taskid_log_Dict[taskid]+\
                     "[*"+log["time"]+"]"+log["message"]+";<br>"            
         self.taskid_status_Dict['status']="terminated"
-            
-        
         #convert data['value] to a html table element,too many ugly code......
         response_data=urllib2.urlopen(request_data)
         response_data=response_data.read()
@@ -314,13 +142,6 @@ class AutoSqli(object):
         html_table2=html_table2+"</table>"
         self.taskid_data_Dict[taskid]=html_table1+html_table2
     def SetOptions(self,taskid,options={}):
-        #if not options:
-            #options=self.taskid_options_Dict
-        #if type(options) is not dict:
-            #options=self.taskid_options_Dict
-        #for key in options:
-            #if key in self.taskid_options_Dict.keys():
-                #self.ta
         url=self.serverURL+":"+self.serverPort+"/option/"+taskid+"/set"
         request=urllib2.Request(url,json.dumps(options))
         request.add_header("Content-Type","application/json")
@@ -337,7 +158,8 @@ class AutoSqli(object):
         #by the way,when a task is running,taskid_data_Dict does not have its taskid in keys()
         if(responseData['success']==True):
             #we should stop thread at first
-            if self.taskid_threads_Dict[taskid].isAlive():#actually this method is not perfect and can't stop threads set value 100%
+            if self.taskid_threads_Dict[taskid].isAlive():
+                #actually this method is not perfect and can't stop threads set value 100%
                 self.taskid_status_Dict[taskid]="deleted"
             del self.taskid_threads_Dict[taskid]
             del self.taskid_log_Dict[taskid]
@@ -396,36 +218,7 @@ class AutoSqli(object):
 autosqli=AutoSqli("http://127.0.0.1","8775")
 
 @app.route('/',methods=['GET'])
-def handle_get_data(): #!!!There is a problem:the task which is running,can not be deleted,so we should stop it first or hide "Delete" button
-    
-    #if "action" in request.args and request.args["action"]=="refresh":
-        #html_tasks_area=""
-        #for taskid in autosqli.taskid_url_Dict:
-            #html_tasks_area=html_tasks_area+'<div class="taskitem">\
-            #<p id="'+taskid+'_url">url:'+autosqli.taskid_url_Dict[taskid]+\
-                    #'<span style="color:#fff;background-color:#cc6600;font-size:25px; margin-left:30px;padding:2px 2px 2px 2px;" onclick="see_task(\''+taskid+'\')">Data</span>'+\
-                    #'<span style="color:red;background-color:#cc6600;font-size:25px; margin-left:30px;padding:2px 2px 2px 2px;" onclick="del_task(\''+taskid+'\')">Delete</span></p>\
-            #<p id="'+taskid+'_taskid">taskid:'+taskid+'</p>\
-            #<p id="'+taskid+'_status">status:'+autosqli.taskid_status_Dict[taskid]+'</p>\
-            #<p id="'+taskid+'_log" onclick="see_log(\''+taskid+'\')">log:[click to expand]</p>\
-            #<p id="'+taskid+'_log_content"></p>\
-            #</div>'
-        #return html_tasks_area
-    #elif "action" in request.args and request.args["action"]=="delete" \
-         #and "taskid" in request.args and request.args["taskid"]!="":
-        #return autosqli.DeleteTask(str(request.args["taskid"]))
-    #elif "action" in request.args and request.args["action"]=="seedata"\
-         #and "taskid" in request.args and request.args["taskid"]!="":
-        #taskid=str(request.args["taskid"])
-        #if taskid in autosqli.taskid_data_Dict.keys():
-            #return render_template("data.html",data=autosqli.taskid_data_Dict[taskid])
-        #else:
-            #return render_template("index.html",serversite="http://127.0.0.1:8775")
-    #elif "action" in request.args and request.args["action"]=="seelog"\
-         #and "taskid" in request.args and request.args["taskid"]!="":
-        #taskid=str(request.args["taskid"])
-        #return autosqli.taskid_log_Dict[taskid];
-    #else:
+def handle_get_data(): 
     return render_template("index.html")
 @app.route('/quickbuild.html',methods=['GET'])
 def handle_quickbuild():
@@ -490,11 +283,9 @@ def handle_instructions():
 def handle_post_quickbuild():
     if 'url' in request.json:
         log=autosqli.NewTask(request.json['url'])
-        return log#render_template("index.html",log=log,serversite="http://127.0.0.1:8775")
-    #elif:condition
+        return log
     else:
-        return "illegal data."#render_template("index.html",log="no data given",serversite="http://127.0.0.1:8775")
-
+        return "illegal data."
 def returnlist():
     return autosqli.SeeTaskList()
     
