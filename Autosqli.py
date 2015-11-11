@@ -218,12 +218,24 @@ class AutoSqli(object):
 autosqli=AutoSqli("http://127.0.0.1","8775")
 
 @app.route('/',methods=['GET'])
-def handle_get_data(): 
+def handle_root(): 
     return render_template("index.html")
+
+@app.route('/index.html',methods=['GET'])
+def handle_index(): 
+    return render_template("index.html")
+
 @app.route('/quickbuild.html',methods=['GET'])
 def handle_quickbuild():
     return render_template("quickbuild.html")
-
+@app.route('/quickbuild.html',methods=['POST'])
+def handle_post_quickbuild():
+    if 'url' in request.json:
+        log=autosqli.NewTask(request.json['url'])
+        return log
+    else:
+        return "illegal data."
+    
 @app.route('/customtask.html',methods=['GET'])
 def handle_customtask():
     return render_template("customtask.html")
@@ -238,11 +250,11 @@ def handle_tasklist():
                 autosqli.taskid_url_Dict[taskid]+\
                 '</span></p><p><span><strong>Status:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
                 autosqli.taskid_status_Dict[taskid]+'</span></p>'+\
-                '<p class="button" onclick="see_log(\''+taskid+'\')">'+\
-                '<strong>Log</strong></p>'+\
-                '<p class="button" onclick="see_data(\''+taskid+'\')">'+\
-                '<strong>Data</strong></p>'+\
-                '<p class="button" onclick="delete(\''+taskid+'\')">'+\
+                '<a class="button" href="/tasklog.html?taskid='+taskid+'">'+\
+                '<strong>Log</strong></a>'+\
+                '<a class="button" href="/taskdata.html?taskid='+taskid+'">'+\
+                '<strong>Data</strong></a>'+\
+                '<p class="button" onclick="del_task(\''+taskid+'\')">'+\
                 '<strong>Delete</strong></p></div>'            
         return return_html
     elif "action" in request.args and request.args["action"]=="delete" \
@@ -267,10 +279,10 @@ def handle_tasklist():
                 autosqli.taskid_url_Dict[taskid]+\
                 '</span></p><p><span><strong>Status:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
                 autosqli.taskid_status_Dict[taskid]+'</span></p>'+\
-                '<p class="button" onclick="see_log(\''+taskid+'\')">'+\
-                '<strong>Log</strong></p>'+\
-                '<p class="button" onclick="see_data(\''+taskid+'\')">'+\
-                '<strong>Data</strong></p>'+\
+                '<a class="button" href="/tasklog.html?taskid='+taskid+'">'+\
+                '<strong>Log</strong></a>'+\
+                '<a class="button" href="/taskdata.html?taskid='+taskid+'">'+\
+                '<strong>Data</strong></a>'+\
                 '<p class="button" onclick="delete(\''+taskid+'\')">'+\
                 '<strong>Delete</strong></p></div>'            
         return render_template("tasklist.html",html=return_html)
@@ -279,13 +291,28 @@ def handle_tasklist():
 def handle_instructions():
     return render_template("instructions.html")
 
-@app.route('/quickbuild.html',methods=['POST'])
-def handle_post_quickbuild():
-    if 'url' in request.json:
-        log=autosqli.NewTask(request.json['url'])
-        return log
+@app.route('/tasklog.html',methods=['GET'])
+def handle_tasklog():
+    if "action" in request.args and request.args["action"]=="refresh"\
+       and "taskid" in request.args\
+       and request.args["taskid"] in autosqli.taskid_log_Dict.keys():
+        taskid=str(request.args["taskid"])
+        if autosqli.taskid_status_Dict[taskid]!="terminated":
+            return autosqli.taskid_log_Dict[taskid]
+        else:
+            return "terminated"
+    elif "taskid" in request.args and \
+       request.args["taskid"] in autosqli.taskid_log_Dict.keys():
+        taskid=str(request.args["taskid"])
+        return render_template("tasklog.html",Log=autosqli.taskid_log_Dict[taskid],\
+                               TaskID=taskid,TargetURL=autosqli.taskid_url_Dict[taskid])
     else:
-        return "illegal data."
+        return '<script>window.location="/index.html"</script>'
+    
+@app.route('/taskdata.html',methods=['GET'])
+def handle_taskdata():
+    return render_template("taskdata.html")
+
 def returnlist():
     return autosqli.SeeTaskList()
     
