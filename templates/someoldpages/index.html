@@ -64,22 +64,19 @@ padding:2px 2px 2px 2px;
 
 function add_task()
 {
-var url="/";
-var send_content='{"url":"'+document.getElementById("addtask_url").value+'"}';
-loadXMLDocByPost(send_content,url,function(){
-if(xmlhttp.readyState==4&&xmlhttp.status==200)
-{
-if(xmlhttp.responseText=="False")
-{
-document.getElementById("tips").innerHTML="添加任务出错";
-}
-else
-{
-document.getElementById("tips").innerHTML="";
-update_taskbox();
-}
-}
-});
+	var url="/";
+	var send_content='{"url":"'+document.getElementById("addtask_url").value+'"}';
+	loadXMLDocByPost(send_content,url,function(){
+		if(xmlhttp.readyState==4&&xmlhttp.status==200){
+			if(xmlhttp.responseText=="False"){
+				document.getElementById("tips").innerHTML="添加任务出错";
+			}
+			else{
+				document.getElementById("tips").innerHTML="";
+				update_taskbox();
+			}
+		}
+	});
 }
 
 function update_taskbox()

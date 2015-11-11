@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>AutoSqli-TaskList</title>
+<title>AutoSqli-TaskData</title>
 <link href="/static/css/zxmk.css" rel="stylesheet" type="text/css"/>
 <script src="/static/js/ajax.js" type="text/javascript"></script>
 <script src="/static/js/core.js" type="text/javascript"></script>
@@ -41,7 +41,6 @@ function del_task(taskid){
 		}
 	});
 }
-window.setInterval(update_taskbox,1000);
 </script>
 <style>
 .clear{height: 100px;float: left;clear: both;}
@@ -61,10 +60,5 @@ window.setInterval(update_taskbox,1000);
   <div class="clear">
   </div>
  </div>
- <div class="tasklist_box" id="tasklist_box">
- {{html|safe}}
- </div>
 </body>
 </html>
-
-
