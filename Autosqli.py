@@ -3,6 +3,7 @@ import json
 import time
 import threading
 import re
+import requests
 from flask import Flask
 from flask import render_template,request
 
@@ -18,17 +19,9 @@ class AutoSqli(object):
         self.taskid_threads_Dict={}
         self.taskid_data_Dict={}
         self.taskid_options_Dict={}
-    def NewTask(self,targetURL):
-        m=re.match('(http://)|(https://)',targetURL)
-        if m is None:
-            targetURL="http://"+targetURL        
-        repeated=self.URL_Dedu(targetURL)
-        if repeated != 1:
-            return "False"
-        request=urllib2.Request(self.serverURL+":"+self.serverPort+
-                                "/task/new")
-        response=urllib2.urlopen(request)
-        responseData=json.loads(response.read())
+    def NewTask(self):
+        url=self.serverURL+":"+self.serverPort+"/task/new"
+        responseData=json.loads(requests.get(url,None).text)
         if(responseData['success']==True):
             taskid=responseData['taskid']
             self.taskid_log_Dict[taskid]=time.strftime("[*%H:%M:%S]")+\
@@ -36,123 +29,88 @@ class AutoSqli(object):
                 % (taskid)
             self.taskid_url_Dict[taskid]="empty"
             self.taskid_status_Dict[taskid]="waiting targetUrl"
-            self.SetOptions(taskid,{"getDbs":True})
-            url=self.serverURL+":"+self.serverPort+"/scan/"+taskid+"/start"
-            request=urllib2.Request(url,'{"url":"'+targetURL+'"}')
-            request.add_header("Content-Type","application/json")
-            response=urllib2.urlopen(request)
-            responseData=json.loads(response.read())
-            if(responseData['success']==True):
-                self.taskid_url_Dict[taskid]=targetURL
-                self.taskid_log_Dict[taskid]=self.taskid_log_Dict[taskid]+\
-                    time.strftime("[*%H:%M:%S]")+\
-                    "Started a new scan of %s sucessfully!The engineid is %s;<br>"\
-                    % (targetURL,responseData['engineid'])
-                self.taskid_status_Dict[taskid]="scanning"
-                self.taskid_threads_Dict[taskid]=threading.Thread(target=self.Thread_Handle,\
-                                                                  args=(taskid,))
-                self.taskid_threads_Dict[taskid].start()
-                return "True"
-            else:
-                self.DeleteTask(taskid)
-                del self.taskid_url_Dict[taskid]
-                del self.taskid_log_Dict[taskid]
-                del self.taskid_status_Dict[taskid]
-                return "False"
+            return taskid
         else:
-            return "False"
+            return False
+    def StartScan(self,taskid):
+        url=self.serverURL+":"+self.serverPort+"/scan/"+taskid+"/start"
+        responseData=json.loads(\
+            requests.post(url,None,{'Content-Type': 'application/json'}).text)
+        if(responseData['success']==True):
+            self.taskid_log_Dict[taskid]=self.taskid_log_Dict[taskid]+\
+                time.strftime("[*%H:%M:%S]")+\
+                "Started a new scan sucessfully!The engineid is %s;<br>"\
+                % (responseData['engineid'])
+            self.taskid_status_Dict[taskid]="scanning"
+            self.taskid_threads_Dict[taskid]=threading.Thread(target=self.Thread_Handle,\
+                                                              args=(taskid,))
+            self.taskid_threads_Dict[taskid].start()
+            return True
+        else:
+            self.DeleteTask(taskid)
+            del self.taskid_url_Dict[taskid]
+            del self.taskid_log_Dict[taskid]
+            del self.taskid_status_Dict[taskid]
+            return False      
     def Thread_Handle(self,taskid):#must use statusr
-        request_status=urllib2.Request(self.serverURL+":"+self.serverPort+
-                                "/scan/"+taskid+"/status")
-        request_log=urllib2.Request(self.serverURL+":"+self.serverPort+
-                                "/scan/"+taskid+"/log")
-        request_data=urllib2.Request(self.serverURL+":"+self.serverPort+
-                                "/scan/"+taskid+"/data")
-        response_status=urllib2.urlopen(request_status)                   #----|
-        response_status_data=json.loads(response_status.read())           #    |
-        self.taskid_status_Dict[taskid]=response_status_data['status']    #----|   
+        url_status=self.serverURL+":"+self.serverPort+"/scan/"+taskid+"/status"
+        url_log=self.serverURL+":"+self.serverPort+"/scan/"+taskid+"/log"
+        url_data=self.serverURL+":"+self.serverPort+"/scan/"+taskid+"/data"
+        
+        response_status_data=json.loads(requests.get(url_status,None).text)
+        self.taskid_status_Dict[taskid]=response_status_data['status']  
         while response_status_data['status']!="terminated":
             if self.taskid_status_Dict[taskid]=="deleted":
                 return False
             time.sleep(2)
-            response_status=urllib2.urlopen(request_status)               #----|
-            response_status_data=json.loads(response_status.read())       #    |
-            self.taskid_status_Dict[taskid]=response_status_data['status']#----|  
-            response_log=urllib2.urlopen(request_log)
-            response_log_data=json.loads(response_log.read()) 
-            loglist=response_log_data["log"]
-            for log in loglist:
-                self.taskid_log_Dict[taskid]=self.taskid_log_Dict[taskid]+\
-                    "[*"+log["time"]+"]"+log["message"]+";<br>"            
+            response_status_data=json.loads(requests.get(url_status,None).text)
+            self.taskid_status_Dict[taskid]=response_status_data['status']               
+        response_log_data=json.loads(requests.get(url_log,None).text) 
+        loglist=response_log_data["log"]
+        for log in loglist:
+            self.taskid_log_Dict[taskid]=self.taskid_log_Dict[taskid]+\
+                "[*"+log["time"]+"]"+log["message"]+";<br>"            
         self.taskid_status_Dict['status']="terminated"
-        #convert data['value] to a html table element,too many ugly code......
-        response_data=urllib2.urlopen(request_data)
-        response_data=response_data.read()
-        response_data=json.loads(response_data)
+        #convert scan data to a html table element,too many ugly code......
+        response_data=json.loads(requests.get(url_data,None).text)
         response_data=response_data['data']
-        response_data=response_data[0]
-        response_data=response_data["value"][0]
-        html_table1=""
-        html_table2=""
-        for key in response_data:
-            if key !="conf" and key!="data":
-                response_data[key]=str(response_data[key])
-        html_table1='<table width="200" border="1" id="table1">'+\
-            '<caption>Conventional data</caption><tr><td>DBMS</td><td colspan="2">'+response_data["dbms"]+'</td></tr>'+\
-            '<tr><td>Suffix</td><td colspan="2">'+response_data["suffix"]+'</td></tr><tr><td>Clause</td>'+\
-            '<td colspan="2">'+response_data["clause"]+'</td></tr>'+\
-            '<tr><td>ptype</td><td colspan="2">'+response_data["ptype"]+'</td></tr>'+\
-            '<tr><td>DBMS_Version</td><td colspan="2">'+\
-            response_data["dbms_version"]+'</td></tr>'
-        for key in response_data["conf"]:
-            if not type(response_data["conf"][key]):
-                response_data["conf"][key]="empty"
+        data_html=""
+        for data_item in response_data:
+            if type(data_item['value'])==list:
+                data_html=data_html+self.list_2_html(data_item['value'])
+            elif type(data_item['value'])==dict:
+                data_html=data_html+self.dict_2_html(data_item['value'])
             else:
-                response_data["conf"][key]=str(response_data["conf"][key])
-        if not type(response_data["os"]):
-            response_data["os"]="empty"
-        else:
-            response_data["os"]=str(response_data["os"])
-        html_table1=html_table1+'<tr><td>place</td><td colspan="2">'+response_data["place"]+'</td></tr>'+\
-            '<tr><td rowspan="6">conf</td><td>string</td><td>'+response_data["conf"]["string"]+'</td></tr>'+\
-            '<tr><td>notString</td><td>'+response_data["conf"]["notString"]+'</td></tr>'+\
-            '<tr><td>titles</td><td>'+response_data["conf"]["titles"]+'</td></tr>'+\
-            '<tr><td >regexp</td><td >'+response_data["conf"]["regexp"]+'</td></tr>'+\
-            '<tr><td >textOnly</td><td >'+response_data["conf"]["textOnly"]+'</td></tr>'+\
-            '<tr><td >optimize</td><td >'+response_data["conf"]["optimize"]+'</td></tr>'+\
-            '<tr><td>parameter</td><td colspan="2">'+response_data["parameter"]+'</td></tr>'+\
-            '<tr><td>OS</td><td colspan="2">'+response_data["os"]+'</td></tr></table>'
-        response_data=response_data["data"]
-        html_table2='<table width="200" border="1" id="table2">'+\
-            '<caption>Payloads Info</caption><tr><th style="width:80px">number</th><th style="width:200px">item</th><th>details</th></tr>'
-        for key in response_data:
-            for item in response_data[key]:
-                if not type(response_data[key][item]):
-                    response_data[key][item]="null"
-                else:
-                    response_data[key][item]=str(response_data[key][item])
-            html_table2=html_table2+'<tr><td rowspan="7">'+key+'</td><td>comment</td><td>'+\
-                response_data[key]["comment"]+'</td></tr>'+\
-                '<tr><td>matchRatio</td><td>'+response_data[key]["matchRatio"]+'</td></tr>'+\
-                '<tr><td>title</td><td>'+response_data[key]["title"]+'</td></tr>'+\
-                '<tr><td >templatePayload</td><td >'+response_data[key]["templatePayload"]+'</td></tr>'+\
-                '<tr><td >vector</td><td >'+response_data[key]["vector"]+'</td></tr>'+\
-                '<tr><td >where</td><td >'+response_data[key]["where"]+'</td></tr>'+\
-                '<tr><td >payload</td><td >'+response_data[key]["payload"]+'</td></tr>'
-        html_table2=html_table2+"</table>"
-        self.taskid_data_Dict[taskid]=html_table1+html_table2
+                data_html=data_html+self.str_2_html(data_item['value'])
+        data_html=re.sub("u'","",data_html)
+        self.taskid_data_Dict[taskid]=data_html
+    def list_2_html(self,data_list):
+        data_html='<table border="1">'
+        for i in range(0,len(data_list)):
+            if type(data_list[i])==dict:
+                for item in data_list[i]:
+                    data_html=data_html+'<tr><td class="item">'+str(item)+'</td><td>'+str(data_list[i][item])+'</td></tr>'
+            else: 
+                data_html=data_html+'<tr><td class="item">'+str(i)+'</td><td>'+data_list[i]+'</td></tr>'  
+        data_html=data_html+"</table>"
+        return data_html
+    def dict_2_html(self,data_dict):
+        data_html='<table  border="1">'
+        for key in data_dict:
+            data_html=data_html+'<tr><td class="item">'+str(key)+'</td><td>'+str(data_dict[key])+'</td></tr>'
+        data_html=data_html+"</table>"
+        return data_html
+    def str_2_html(self,data_unknown):
+        data_html='<table  border="1"><tr><td class="item">'+str(data_unknown)+'</td></tr></table>'
+        return data_html
     def SetOptions(self,taskid,options={}):
         url=self.serverURL+":"+self.serverPort+"/option/"+taskid+"/set"
-        request=urllib2.Request(url,json.dumps(options))
-        request.add_header("Content-Type","application/json")
-        response=urllib2.urlopen(request)
-        responseData=json.loads(response.read())        
+        requests.post(url,data=json.dumps(options),\
+                      headers={'Content-Type':'application/json'})        
     
     def DeleteTask(self,taskid):
-        request=urllib2.Request(self.serverURL+":"+self.serverPort+
-                                "/task/"+taskid+"/delete")                
-        response=urllib2.urlopen(request)
-        responseData=json.loads(response.read())
+        url=self.serverURL+":"+self.serverPort+"/task/"+taskid+"/delete"         
+        responseData=json.loads(requests.get(url,None).text)
         #there are two status when we wants to delete a task:running and terminated
         #and whatever the status is,we should kill the thread of the task
         #by the way,when a task is running,taskid_data_Dict does not have its taskid in keys()
@@ -231,10 +189,24 @@ def handle_quickbuild():
 @app.route('/quickbuild.html',methods=['POST'])
 def handle_post_quickbuild():
     if 'url' in request.json:
-        log=autosqli.NewTask(request.json['url'])
-        return log
+        targetURL=request.json['url']
+        m=re.match('(http://)|(https://)',targetURL) #add http:// for targetURL
+        if m is None:
+            targetURL="http://"+targetURL        
+        repeated=autosqli.URL_Dedu(targetURL)     #check whether targetURL has been added
+        if repeated != 1:
+            return "False" 
+        else:
+            taskid=autosqli.NewTask()
+            if taskid:
+                autosqli.SetOptions(taskid,{"url": targetURL})
+                log=autosqli.StartScan(taskid)
+                autosqli.taskid_url_Dict[taskid]=targetURL
+                return str(log)
+            else:
+                return "False"
     else:
-        return "illegal data."
+        return "False"
     
 @app.route('/customtask.html',methods=['GET'])
 def handle_customtask():
@@ -260,13 +232,6 @@ def handle_tasklist():
     elif "action" in request.args and request.args["action"]=="delete" \
          and "taskid" in request.args and request.args["taskid"]!="":
         return autosqli.DeleteTask(str(request.args["taskid"]))
-    #elif "action" in request.args and request.args["action"]=="seedata"\
-         #and "taskid" in request.args and request.args["taskid"]!="":
-        #taskid=str(request.args["taskid"])
-        #if taskid in autosqli.taskid_data_Dict.keys():
-            #return render_template("data.html",data=autosqli.taskid_data_Dict[taskid])
-        #else:
-            #return render_template("index.html",serversite="http://127.0.0.1:8775")
     elif "action" in request.args and request.args["action"]=="seelog"\
          and "taskid" in request.args and request.args["taskid"]!="":
         taskid=str(request.args["taskid"])
@@ -311,7 +276,13 @@ def handle_tasklog():
     
 @app.route('/taskdata.html',methods=['GET'])
 def handle_taskdata():
-    return render_template("taskdata.html")
+    if "taskid" in request.args and \
+       request.args["taskid"] in autosqli.taskid_data_Dict.keys():
+        taskid=str(request.args["taskid"])
+        return render_template("taskdata.html",Data=autosqli.taskid_data_Dict[taskid],\
+                               TaskID=taskid,TargetURL=autosqli.taskid_url_Dict[taskid])
+    else:
+        return '<script>window.location="/index.html"</script>'
 
 def returnlist():
     return autosqli.SeeTaskList()

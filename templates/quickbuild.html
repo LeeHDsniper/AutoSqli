@@ -14,7 +14,7 @@ function add_task()
   var send_content='{"url":"'+document.getElementById("url_text").value+'"}';
   loadXMLDocByPost(send_content,url,function(){
     if(xmlhttp.readyState==4&&xmlhttp.status==200){
-      if(xmlhttp.responseText=="False"){
+      if(xmlhttp.responseText==false){
         document.getElementById("tips").innerHTML="添加任务出错";
       }
       else{
