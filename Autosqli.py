@@ -70,6 +70,11 @@ class AutoSqli(object):
         for log in loglist:
             self.taskid_log_Dict[taskid]=self.taskid_log_Dict[taskid]+\
                 "[*"+log["time"]+"]"+log["message"]+";<br>"            
+            response_log_data=json.loads(requests.get(url_log,None).text) 
+            loglist=response_log_data["log"]
+            for log in loglist:
+                self.taskid_log_Dict[taskid]=self.taskid_log_Dict[taskid]+\
+                    "[*"+log["time"]+"]"+log["message"]+";<br>"            
         self.taskid_status_Dict['status']="terminated"
         #convert scan data to a html table element,too many ugly code......
         response_data=json.loads(requests.get(url_data,None).text)
@@ -212,6 +217,26 @@ def handle_post_quickbuild():
 def handle_customtask():
     return render_template("customtask.html")
 
+@app.route('/customtask.html',methods=['POST'])
+def handle_post_customtask():
+    if 'url' not in request.form.keys():
+        return render_template("customtask.html",result="Error:Please input URL.")
+    targetURL=request.form['url']
+    m=re.match('(http://)|(https://)',targetURL) #add http:// for targetURL
+    if m is None:
+        targetURL="http://"+targetURL    
+    if autosqli.URL_Dedu(targetURL)!=1:
+        return render_template("customtask.html",result="Error:This url has been establised.")
+    taskid=autosqli.NewTask()
+    if taskid:
+        autosqli.SetOptions(taskid,request.form)
+        log=autosqli.StartScan(taskid)
+        autosqli.taskid_url_Dict[taskid]=targetURL
+        if log:
+            return render_template("tasklist.html")
+    else:
+        return render_template("customtask.html",result="Failed:Can not start task.")
+    
 @app.route('/tasklist.html',methods=['GET'])
 def handle_tasklist():
     if "action" in request.args and request.args["action"]=="refresh":
