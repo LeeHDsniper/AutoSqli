@@ -109,6 +109,9 @@ class AutoSqli(object):
         data_html='<table  border="1"><tr><td class="item">'+str(data_unknown)+'</td></tr></table>'
         return data_html
     def SetOptions(self,taskid,options={}):
+        for k in options:
+            if options[k]=="False" or options[k]=="":
+                del options[k]
         url=self.serverURL+":"+self.serverPort+"/option/"+taskid+"/set"
         requests.post(url,data=json.dumps(options),\
                       headers={'Content-Type':'application/json'})        
@@ -226,17 +229,20 @@ def handle_post_customtask():
     if m is None:
         targetURL="http://"+targetURL    
     if autosqli.URL_Dedu(targetURL)!=1:
-        return render_template("customtask.html",result="Error:This url has been establised.")
+        return render_template("customtask.html",result="Error:This url has been establised.")    
     taskid=autosqli.NewTask()
+    options={}
     if taskid:
-        autosqli.SetOptions(taskid,request.form)
+        for k in request.form:
+            if request.form[k] and request.form[k] != "False" and request.form[k]!= "":
+                options[k]=request.form[k]
+        autosqli.SetOptions(taskid,options)
         log=autosqli.StartScan(taskid)
         autosqli.taskid_url_Dict[taskid]=targetURL
         if log:
             return render_template("tasklist.html")
     else:
-        return render_template("customtask.html",result="Failed:Can not start task.")
-    
+        return render_template("customtask.html",result="Failed:can not establish task.")
 @app.route('/tasklist.html',methods=['GET'])
 def handle_tasklist():
     if "action" in request.args and request.args["action"]=="refresh":
