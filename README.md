@@ -39,7 +39,6 @@ This page introducts functions of all sqlmapapi's parameters.
     * [Download AutoSqli application](https://github.com/LeeHDsniper/AutoSqli)
 
 2. ####Extract sqlmap file to the document where your python is
-
 3. ####Run sqlmapapi.py as server
 
     * If you use Linux,maybe these command is useful:
@@ -50,7 +49,6 @@ This page introducts functions of all sqlmapapi's parameters.
     <br>Type:`python sqlmapapi.py -s`
 
 4. ####Run AutoSqli,py
-
 You can use `sudo python AutoSqli.py`(Linux) or `python AutoSqli.py`(Windows)
 
 5. ####Open your browser and visit 127.0.0.1
