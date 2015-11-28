@@ -141,9 +141,7 @@ class AutoSqli(object):
         for taskid in self.taskid_url_Dict.keys():
             task_list=task_list+taskid+"-->"+self.taskid_url_Dict[taskid]+"<br>"
         return task_list
-    def URL_Dedu(self,targetURL):
-        #if not len(self.taskid_url_Dict):
-            #return 1
+    def URL_Dupl(self,targetURL):
         m=re.match('(http://)|(https://)',targetURL)
         if m is None:
             targetURL="http://"+targetURL
@@ -201,7 +199,7 @@ def handle_post_quickbuild():
         m=re.match('(http://)|(https://)',targetURL) #add http:// for targetURL
         if m is None:
             targetURL="http://"+targetURL        
-        repeated=autosqli.URL_Dedu(targetURL)     #check whether targetURL has been added
+        repeated=autosqli.URL_Dupl(targetURL)     #check whether targetURL has been added
         if repeated != 1:
             return "False" 
         else:
@@ -228,7 +226,7 @@ def handle_post_customtask():
     m=re.match('(http://)|(https://)',targetURL) #add http:// for targetURL
     if m is None:
         targetURL="http://"+targetURL    
-    if autosqli.URL_Dedu(targetURL)!=1:
+    if autosqli.URL_Dupl(targetURL)!=1:
         return render_template("customtask.html",result="Error:This url has been establised.")    
     taskid=autosqli.NewTask()
     options={}
