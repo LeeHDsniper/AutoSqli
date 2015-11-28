@@ -155,4 +155,4 @@ Now*(2015/11/28)* the only thing I think is useful and worth mentioning is URL D
 ## Epilogue
 This project has many flaws (∩_∩)，or I can say it just begin.Maybe it will be more perfect someday in spite of SQL injection is more and more difficult now.I do not have enough knowledge and time to improve it,but I expect someone can make this be a useful tools in SQL injection.
    
-   At last,I am particularly grateful to Manning, the Author of the topic:[使用sqlmapapi.py批量化扫描实践](http://drops.wooyun.org/tips/6653?utm_source=tuicool).His topic gave me too much inspiration and experience,*[set_options.txt](set_options.txt)* in my project is copy from [his project](https://github.com/manning23/MSpider).Thanks again.Also thanks to the team members of sqlmap.
+   At last,I am particularly grateful to **Manning**, the Author of the topic:[使用sqlmapapi.py批量化扫描实践](http://drops.wooyun.org/tips/6653?utm_source=tuicool).His topic gave me too much inspiration and experience,*[set_options.txt](set_options.txt)* in my project is copy from [his project](https://github.com/manning23/MSpider).Thanks again.Also thanks to the team members of sqlmap.
