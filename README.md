@@ -11,21 +11,21 @@
    >[**you can download sqlmap and sqlmapapi at github project**](https://github.com/sqlmapproject/sqlmap)
    
 ##What is AutoSqli
-> AutoSqli is a web application that provide a hommization UI of sqlmap.It has easy methods to building a SQL detection and managing test missons.You don't have to open two terminals as server and client,and type many commands like [*use <task id\>*],[*status*] or [*data*] and so on.
+AutoSqli is a web application that provide a hommization UI of sqlmap.It has easy methods to building a SQL detection and managing test missons.You don't have to open two terminals as server and client,and type many commands like [*use <task id\>*],[*status*] or [*data*] and so on.
 
-> **AutoSqli has four fundamental pages**
+**AutoSqli has four fundamental pages**
 
 * ####QuickBuild
-> This page provide the most basic function:*check a URL that has some parameters like [www.example.com/index.php?id=2] wether has SQL flaws.*That means all parameters of sqlmap **except 'url'** will be false or null.
+This page provide the most basic function:*check a URL that has some parameters like [www.example.com/index.php?id=2] wether has SQL flaws.*That means all parameters of sqlmap **except 'url'** will be false or null.
 
 * ####CustomTask
-> This page is the core of this application.You can select many parameters and fill in cookies of url you want to test.
+This page is the core of this application.You can select many parameters and fill in cookies of url you want to test.
 
 * ####TaskList
-> You can view and manage all task you have built in this application.It will refresh automatically every 1 second.Each task has a status.When status is *terminated*,the detect is done.You can click log and data to view scan log and result,of course you can delete this task.
+You can view and manage all task you have built in this application.It will refresh automatically every 1 second.Each task has a status.When status is *terminated*,the detect is done.You can click log and data to view scan log and result,of course you can delete this task.
 
 * ####Instruction
-> This page introducts functions of all sqlmapapi's parameters.
+This page introducts functions of all sqlmapapi's parameters.
 
 ##Something needs to be improved eagerly
 
