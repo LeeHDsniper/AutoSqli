@@ -28,7 +28,9 @@
 > This page introducts functions of all sqlmapapi's parameters.
 
 ##Something needs to be improved eagerly
+
 * #### More perfect way to exhibit result of scan
+
 > I have tried many ways to convert json data of result to html table,but when I add two or more parameters to scan,the json data returned by sqlmapapi is so complicated that it is hard to convert.***This is a json data of a detect with one parameter***
 ![](1pa_data.png)
 When I convert this to a html table,the result is acceptable barely.***But when parameter is two:***
@@ -73,4 +75,4 @@ It is so complicated that I have to use these code to convert it:
             return data_html
 > ***...snip...line 111***
 
-> > How to convert scan result to a perfect exhibition is the most important problem I have.
+> How to convert scan result to a perfect exhibition is the most important problem I have.
