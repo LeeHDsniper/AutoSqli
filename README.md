@@ -32,8 +32,11 @@ This page introducts functions of all sqlmapapi's parameters.
 1. ####Preparation
 
 * * [Download Sqlmap](https://github.com/sqlmapproject/sqlmap)
+
 * * Python 2.7 enviroment
+
 * * Flask Framework *[how to install flask?](http://dormousehole.readthedocs.org/en/latest/)*
+
 * * [Download AutoSqli application](https://github.com/LeeHDsniper/AutoSqli)
 
 2. ####Extract sqlmap file to the document where your python is.
