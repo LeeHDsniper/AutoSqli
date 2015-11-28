@@ -30,7 +30,6 @@ This page introducts functions of all sqlmapapi's parameters.
 ##How to use AutoSqli
 
 1. ####Preparation
-
 * * [Download Sqlmap](https://github.com/sqlmapproject/sqlmap)
 
 * * Python 2.7 enviroment
@@ -38,21 +37,16 @@ This page introducts functions of all sqlmapapi's parameters.
 * * Flask Framework *[how to install flask?](http://dormousehole.readthedocs.org/en/latest/)*
 
 * * [Download AutoSqli application](https://github.com/LeeHDsniper/AutoSqli)
-
 2. ####Extract sqlmap file to the document where your python is
-
 3. ####Run sqlmapapi.py as server
-
 * * If you use Linux,maybe these command is useful:
 <br>`cd /usr/lib/python2.7/sqlmap-master`
 <br>`sudo python ./sqlmapapi.py -s`
 
 * * If you use Windows,you need run command prompt with administrator privilege and use `cd` get in document where sqlmap-master is
 <br>Type:`python sqlmapapi.py -s`
-
 4. ####Run AutoSqli,py
 You can use `sudo python AutoSqli.py`(Linux) or `python AutoSqli.py`(Windows)
-
 5. ####Open your browser and visit 127.0.0.1
 
 ##Something needs to be improved eagerly
