@@ -30,17 +30,15 @@
 ##Something needs to be improved eagerly
 
 * ####More perfect way to exhibit result of scan
-> I have tried many ways to convert json data of result to html table,but when I add two or more parameters to scan,the json data returned by sqlmapapi is so complicated that it is hard to convert.***This is a json data of a detect with one parameter***
-
+I have tried many ways to convert json data of result to html table,but when I add two or more parameters to scan,the json data returned by sqlmapapi is so complicated that it is hard to convert.***This is a json data of a detect with one parameter***
 ![](1pa_data.png)
-> When I convert this to a html table,the result is acceptable barely.***But when parameter is two:***
-
+When I convert this to a html table,the result is acceptable barely.***But when parameter is two:***
 ![](2pa_data1.png)
 ![](2pa_data2.png)
 ![](2pa_data3.png)
-
-> It is so complicated that I have to use these code to convert it:
-> ***...snip...line 82***
+It is so complicated that I have to use these code to convert it:
+   
+    ***...snip...line 82***
 
         for data_item in response_data:
             if type(data_item['value'])==list:
@@ -51,7 +49,7 @@
                 data_html=data_html+self.str_2_html(data_item['value'])
         data_html=re.sub("u'","",data_html)
         self.taskid_data_Dict[taskid]=data_html
-> ***...snip...line 92***
+    ***...snip...line 92***
 
         def list_2_html(self,data_list):
             data_html='<table border="1">'
@@ -74,6 +72,6 @@
         def str_2_html(self,data_unknown):
             data_html='<table  border="1"><tr><td class="item">'+str(data_unknown)+'</td></tr></table>'
             return data_html
-> ***...snip...line 111***
-
-> How to convert scan result to a perfect exhibition is the most important problem I have.
+    ***...snip...line 111***
+    
+    How to convert scan result to a perfect exhibition is the most important problem I have.
