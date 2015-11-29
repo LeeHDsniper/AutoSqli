@@ -16,7 +16,7 @@ AutoSqli is a web application that provide a hommization UI of sqlmap.It has eas
 **AutoSqli has four fundamental pages**
 
 * ####QuickBuild
-This page provide the most basic function:*check a URL that has some parameters like [www.example.com/index.php?id=2] wether has SQL flaws.*That means all parameters of sqlmap **except 'url'** will be false or null.
+This page provides the most basic function:*check a URL with some parameters like [www.example.com/index.php?id=2] wether has SQL flaws.*That means all parameters of sqlmap **except 'url'** will be false or null.
 
 * ####CustomTask
 This page is the core of this application.You can select many parameters and fill in cookies of url you want to test.
@@ -41,11 +41,11 @@ This page introducts functions of all sqlmapapi's parameters.
 2. ####Extract sqlmap file to the document where your python is
 3. ####Run sqlmapapi.py as server
 
-    * If you use Linux,maybe these command is useful:
+    * If you use Linux,maybe these commands are useful:
     <br>`cd /usr/lib/python2.7/sqlmap-master`
     <br>`sudo python ./sqlmapapi.py -s`
 
-    * If you use Windows,you need run command prompt with   administrator privilege and use `cd` get in document where sqlmap-  master is
+    * If you use Windows,you need to run a command prompt with administrator privilege and use `cd` get in document where sqlmap-master is
     <br>Type:`python sqlmapapi.py -s`
 
 4. ####Run AutoSqli,py
@@ -53,13 +53,13 @@ You can use `sudo python AutoSqli.py`(Linux) or `python AutoSqli.py`(Windows)
 
 5. ####Open your browser and visit 127.0.0.1
 
-##Something needs to be improved eagerly
+##Something need to be improved eagerly
 
 1. ####More perfect way to exhibit result of scan
-I have tried many ways to convert json data of result to html table,but when I add two or more parameters to scan,the json data returned by sqlmapapi is so complicated that it is hard to convert.***This is a json data of a detect with one parameter***
+I have tried many ways to convert json data of result to a html table,but when I added two or more parameters to scan,the json data returned by sqlmapapi is so complicated that it is hard to convert.***This is json data of a detect with one parameter***
 ![](1pa_data.png)
     
-    When I convert this to a html table,the result is acceptable barely.***But when parameter is two:***
+    When I converted this to a html table,the result was acceptable barely.***But when parameter was two:***
 ![](2pa_data1.png)
 ![](2pa_data2.png)
 ![](2pa_data3.png)
