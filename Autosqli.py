@@ -402,5 +402,6 @@ def handle_taskdata():
         return render_template("taskdata.html",data=get_TaskData(taskid))
     else:
         return '<script>window.location="/index.html"</script>'
+
 if __name__=='__main__':
     app.run(host="0.0.0.0",port=80,debug=True)
