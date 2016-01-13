@@ -256,17 +256,18 @@ def task_Dup(Options={}):
         if sorted(urlparamters)==sorted(templist_UrlParam) and options==tempdic_Options:
             return -1
     return 1
-    
-@app.route('/sqlshow.html')
-def show_entries():
-    db=get_Db()
-    cur = db.execute("select * from Autosqli")
-    entry=cur.fetchall()
-    tasklist=query_db('select url_parameters,options from Autosqli where user = ?',[session['username']])
+#-------------------A test page----------------------------------   
+#@app.route('/sqlshow.html')
+#def show_entries():
+    #db=get_Db()
+    #cur = db.execute("select * from Autosqli")
+    #entry=cur.fetchall()
+    #tasklist=query_db('select url_parameters,options from Autosqli where user = ?',[session['username']])
     #taskid="ecc7de74a21ef8fa"
     #url_data=SERVER+"/scan/"+taskid+"/data"     
     #response_data=requests.get(url_data,None).text
-    return render_template('sqlshow.html', entries=entry,data=session['username'])
+    #return render_template('sqlshow.html', entries=entry,data=session['username'])
+#-------------------A test page end------------------------------ 
 @app.route('/',methods=['GET'])
 def handle_root():
     set_Session()    
