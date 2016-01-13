@@ -1,214 +1,302 @@
-import urllib2
 import json
 import time
 import threading
 import re
 import requests
-from flask import Flask
-from flask import render_template,request
+import os
+import sqlite3
+import string
+import random
+from flask import Flask,render_template,request,session
 
+SERVER="http://127.0.0.1:8775"
+HEADER={'Content-Type': 'application/json'}
+taskid_thread_Dict={}
 app=Flask(__name__)
 
-class AutoSqli(object):
-    def __init__(self,serverURL,serverPort):
-        self.serverURL=serverURL
-        self.serverPort=serverPort
-        self.taskid_url_Dict={}
-        self.taskid_log_Dict={}
-        self.taskid_status_Dict={}
-        self.taskid_threads_Dict={}
-        self.taskid_data_Dict={}
-        self.taskid_options_Dict={}
-    def NewTask(self):
-        url=self.serverURL+":"+self.serverPort+"/task/new"
-        responseData=json.loads(requests.get(url,None).text)
-        if(responseData['success']==True):
-            taskid=responseData['taskid']
-            self.taskid_log_Dict[taskid]=time.strftime("[*%H:%M:%S]")+\
-                "Built a new task successfully,taskid is %s;<br>"\
-                % (taskid)
-            self.taskid_url_Dict[taskid]="empty"
-            self.taskid_status_Dict[taskid]="waiting targetUrl"
-            return taskid
-        else:
-            return False
-    def StartScan(self,taskid):
-        url=self.serverURL+":"+self.serverPort+"/scan/"+taskid+"/start"
-        responseData=json.loads(\
-            requests.post(url,None,{'Content-Type': 'application/json'}).text)
-        if(responseData['success']==True):
-            self.taskid_log_Dict[taskid]=self.taskid_log_Dict[taskid]+\
-                time.strftime("[*%H:%M:%S]")+\
-                "Started a new scan sucessfully!The engineid is %s;<br>"\
-                % (responseData['engineid'])
-            self.taskid_status_Dict[taskid]="scanning"
-            self.taskid_threads_Dict[taskid]=threading.Thread(target=self.Thread_Handle,\
-                                                              args=(taskid,))
-            self.taskid_threads_Dict[taskid].start()
-            return True
-        else:
-            self.DeleteTask(taskid)
-            del self.taskid_url_Dict[taskid]
-            del self.taskid_log_Dict[taskid]
-            del self.taskid_status_Dict[taskid]
-            return False      
-    def Thread_Handle(self,taskid):#must use statusr
-        url_status=self.serverURL+":"+self.serverPort+"/scan/"+taskid+"/status"
-        url_log=self.serverURL+":"+self.serverPort+"/scan/"+taskid+"/log"
-        url_data=self.serverURL+":"+self.serverPort+"/scan/"+taskid+"/data"
-        
-        response_status_data=json.loads(requests.get(url_status,None).text)
-        self.taskid_status_Dict[taskid]=response_status_data['status']  
-        while response_status_data['status']!="terminated":
-            if self.taskid_status_Dict[taskid]=="deleted":
-                return False
-            time.sleep(2)
-            response_status_data=json.loads(requests.get(url_status,None).text)
-            self.taskid_status_Dict[taskid]=response_status_data['status']               
-        response_log_data=json.loads(requests.get(url_log,None).text) 
-        loglist=response_log_data["log"]
-        for log in loglist:
-            self.taskid_log_Dict[taskid]=self.taskid_log_Dict[taskid]+\
-                "[*"+log["time"]+"]"+log["message"]+";<br>"            
-            response_log_data=json.loads(requests.get(url_log,None).text) 
-            loglist=response_log_data["log"]
-            for log in loglist:
-                self.taskid_log_Dict[taskid]=self.taskid_log_Dict[taskid]+\
-                    "[*"+log["time"]+"]"+log["message"]+";<br>"            
-        self.taskid_status_Dict['status']="terminated"
-        #convert scan data to a html table element,too many ugly code......
-        response_data=json.loads(requests.get(url_data,None).text)
-        response_data=response_data['data']
-        data_html=""
-        for data_item in response_data:
-            if type(data_item['value'])==list:
-                data_html=data_html+self.list_2_html(data_item['value'])
-            elif type(data_item['value'])==dict:
-                data_html=data_html+self.dict_2_html(data_item['value'])
-            else:
-                data_html=data_html+self.str_2_html(data_item['value'])
-        data_html=re.sub("u'","",data_html)
-        self.taskid_data_Dict[taskid]=data_html
-    def list_2_html(self,data_list):
-        data_html='<table border="1">'
-        for i in range(0,len(data_list)):
-            if type(data_list[i])==dict:
-                for item in data_list[i]:
-                    data_html=data_html+'<tr><td class="item">'+str(item)+'</td><td>'+str(data_list[i][item])+'</td></tr>'
-            else: 
-                data_html=data_html+'<tr><td class="item">'+str(i)+'</td><td>'+data_list[i]+'</td></tr>'  
-        data_html=data_html+"</table>"
-        return data_html
-    def dict_2_html(self,data_dict):
-        data_html='<table  border="1">'
-        for key in data_dict:
-            data_html=data_html+'<tr><td class="item">'+str(key)+'</td><td>'+str(data_dict[key])+'</td></tr>'
-        data_html=data_html+"</table>"
-        return data_html
-    def str_2_html(self,data_unknown):
-        data_html='<table  border="1"><tr><td class="item">'+str(data_unknown)+'</td></tr></table>'
-        return data_html
-    def SetOptions(self,taskid,options={}):
-        for k in options:
-            if options[k]=="False" or options[k]=="":
-                del options[k]
-        url=self.serverURL+":"+self.serverPort+"/option/"+taskid+"/set"
-        requests.post(url,data=json.dumps(options),\
-                      headers={'Content-Type':'application/json'})        
-    
-    def DeleteTask(self,taskid):
-        url=self.serverURL+":"+self.serverPort+"/task/"+taskid+"/delete"         
-        responseData=json.loads(requests.get(url,None).text)
-        #there are two status when we wants to delete a task:running and terminated
-        #and whatever the status is,we should kill the thread of the task
-        #by the way,when a task is running,taskid_data_Dict does not have its taskid in keys()
-        if(responseData['success']==True):
-            #we should stop thread at first
-            if self.taskid_threads_Dict[taskid].isAlive():
-                #actually this method is not perfect and can't stop threads set value 100%
-                self.taskid_status_Dict[taskid]="deleted"
-            del self.taskid_threads_Dict[taskid]
-            del self.taskid_log_Dict[taskid]
-            if taskid in self.taskid_data_Dict.keys():
-                del self.taskid_data_Dict[taskid]
-            del self.taskid_status_Dict[taskid]
-            del self.taskid_url_Dict[taskid]
-            return "True"
-        else:
-            return "False"
-    def SeeTaskList(self):
-        task_list=""
-        for taskid in self.taskid_url_Dict.keys():
-            task_list=task_list+taskid+"-->"+self.taskid_url_Dict[taskid]+"<br>"
-        return task_list
-    def URL_Dupl(self,targetURL):
-        m=re.match('(http://)|(https://)',targetURL)
-        if m is None:
-            targetURL="http://"+targetURL
-        option_list=[]
-        m=re.match('(.+)\?',targetURL)
-        if m is None:
-            return 0         # return 0 means illegal URL 
-        else:
-            option_list.append(m.groups()[0])
-        temp_list=re.findall('(\&\w+=)',targetURL)
-        for i in temp_list:
-            if i!="":
-                option_list.append(i)
-        temp_list=re.findall('(\?\w+=)',targetURL)
-        for i in temp_list:
-            if i!="":
-                option_list.append(i)        
-        result=[]
-        for key in self.taskid_url_Dict:
-            url=self.taskid_url_Dict[key]
-            status=True
-            for reg in option_list:
-                if '&' in reg or '?' in reg:
-                    m=re.search('\\'+reg,url)
-                else:
-                    m=re.search(reg,url)
-                if m is None:
-                    status=False
-                    break
-            if status:
-                result.append(url)
-        if len(result):
-            return -1      #return -1 means find url is similar to targeturl
-        else:
-            return 1       #return 1 means no url is similar to targeturl 
-    
-#Instantiates the AutoSqli class.    
-autosqli=AutoSqli("http://127.0.0.1","8775")
+#---------------------SQLITE initial start------------------------
+app.config.update(dict(
+    DATABASE=os.path.join(app.root_path+'/DATABASE', 'Autosqli.db'),
+    DEBUG=True,
+    SECRET_KEY='546sdafwerxcvSERds549fwe8rdxfsaf98we1r2',
+    USERNAME='leehdautosqli',
+    PASSWORD='lifeisshort'
+))
+app.config.from_envvar('AUTOSQLI_SETTINGS', silent=True)
+#---------------------this secret key is for session
+app.secret_key = "34$#4564dsfaWEERds/*-()^=sadfWE89SA"
+def connect_Db():
+    rv=sqlite3.connect(app.config['DATABASE'])
+    rv.row_factory=sqlite3.Row
+    return rv
+def get_Db():
+    sqlite_db=connect_Db()
+    return sqlite_db
+def init_Db():
+    with app.app_context():
+        db=get_Db()
+        with app.open_resource('DATABASE/schema.sql',mode='r') as f:
+            db.cursor().executescript(f.read())
+        db.commit()
+def query_db(query, args=(), one=False):
+    db=get_Db()
+    cur = db.execute(query, args)
+    rv = [dict((cur.description[idx][0], value)
+               for idx, value in enumerate(row)) for row in cur.fetchall()]
+    return (rv[0] if rv else None) if one else rv
+@app.teardown_appcontext
+def close_Db(error):
+    db=get_Db()
+    db.close()
 
+#---------------------SQLITE initial end------------------------ 
+
+#---------------------Random String ----------------------------
+def get_RandomStr(length=1):
+    source="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+    if length>0:
+        return string.join(random.sample(source,length), sep='')
+    else:
+        return '0'
+#---------------------Random String end-------------------------
+
+#---------------------Set SESSION for user----------------------
+def set_Session():
+    if 'username' not in session:
+        session['username']=get_RandomStr(8)
+#---------------------Set SESSION end --------------------------
+
+#-------------Functions to write data to database---------------
+def write_Log(taskid,message={}):
+    log = query_db('select log from Autosqli where taskid = ?',
+                   [taskid], one=True)['log']
+    log=eval(log)
+    log.append(message)
+    db=get_Db()
+    db.execute('update Autosqli set log = ? where taskid = ?',
+                        [str(log),taskid])
+    db.commit()    
+    return True
+def write_Data(taskid,data=""):
+    db=get_Db()
+    db.execute('update Autosqli set data = ? where taskid = ?',
+               [data,taskid])
+    db.commit()
+    return True
+def write_Status(taskid,status=""):
+    db=get_Db()
+    db.execute('update Autosqli set status = ? where taskid = ?',
+               [status,taskid])
+    db.commit()
+    return True
+def write_Url(taskid,url=""):
+    db=get_Db()
+    db.execute('update Autosqli set url = ? where taskid = ?',
+               [url,taskid])
+    db.commit()
+    return True
+def write_UrlParameters(taskid,url_paramters_list=[]):
+    db=get_Db()
+    db.execute('update Autosqli set url_parameters = ? where taskid = ?',
+               [str(url_paramters_list),taskid])
+    db.commit()
+    return True
+#-------------Functions to write data to database end------------
+
+#-------------Functions to get parameters in URL-----------------
+def get_UrlParamters(URL):
+    m=re.match('(http://)|(https://)',URL)
+    if m is None:
+        URL="http://"+URL
+    option_list=[]
+    m=re.match('(.+)\?',URL)
+    if m is None:
+        option_list.append(URL)
+        return option_list
+    temp_list=re.findall('\?(\w+)=',URL)
+    for i in temp_list:
+        if i!="":
+            option_list.append(i)    
+    temp_list=re.findall('\&(\w+)=',URL)
+    for i in temp_list:
+        if i!="":
+            option_list.append(i)
+    for i in range(len(option_list)):
+        option_list[i]=option_list[i].encode('utf-8')
+    return option_list   
+#-------------Functions to get parameters in URL end-------------
+def new_Taskid():
+    '''get a new taskid'''
+    #url="http://127.0.0.1:8775/task/new"
+    url=SERVER+"/task/new"    
+    responseData=json.loads(requests.get(url,None).text)
+    if(responseData['success']==True):
+        taskid=responseData['taskid']
+        log=str([{time.strftime("[*%H:%M:%S]"):"Built a new task successfully"}])
+        #write taskid and log into db
+        db=get_Db()
+        db.execute('insert into Autosqli (taskid, log,user) values (?, ?, ?)',
+                     [taskid,log,session['username']])
+        db.commit()
+        write_Status(taskid, status="not running")
+        return taskid
+    else:
+        return False 
+
+def set_Options(taskid,options={}):
+    if options is None:
+        return False
+    url=SERVER+"/option/"+taskid+"/set"
+    for k in options:
+        if options[k]=="False" or options[k]=="":
+            del options[k]
+    if 'url' in options.keys():
+        write_Url(taskid, url=options['url'])
+        write_UrlParameters(taskid, url_paramters_list=get_UrlParamters(options['url']))
+    data=json.dumps(options)
+    responseData=json.loads(requests.post(url,data=data,headers=HEADER).text)
+    if(responseData['success']==True):
+        log={time.strftime("[*%H:%M:%S]"):"Set Options successfully"}
+        write_Log(taskid,log)
+        db=get_Db()
+        db.execute('update Autosqli set options = ? where taskid = ?',
+                            [data,taskid])
+        db.commit()
+        return True
+    else:
+        return False
+            
+def Thread_Handle(taskid):
+    url_status=SERVER+"/scan/"+taskid+"/status"
+    url_log=SERVER+"/scan/"+taskid+"/log"
+    url_data=SERVER+"/scan/"+taskid+"/data"
+    db=get_Db()
+   
+    response_status=json.loads(requests.get(url_status,None).text)['status']
+    db.execute('update Autosqli set status = ? where taskid = ?',
+               [response_status,taskid]) 
+    db.commit() 
+    while response_status!="terminated" and response_status!="deleting":
+        time.sleep(2)
+        response_status=json.loads(requests.get(url_status,None).text)['status']             
+    response_loglist=json.loads(requests.get(url_log,None).text)['log']
+    for log in response_loglist:
+        write_Log(taskid, {"[*"+log['time']+"]":log['message']})
+    write_Status(taskid, response_status)
+    response_data=requests.get(url_data,None).text
+    if response_data==None:
+        return False
+    write_Data(taskid, response_data)  
+    return True
+    
+def start_Scan(taskid):
+    url=SERVER+"/scan/"+taskid+"/start"
+    responseData=json.loads(requests.post(url,None,{'Content-Type': 'application/json'}).text)
+    if(responseData['success']==True):
+        write_Log(taskid,{time.strftime("[*%H:%M:%S]"):"Started a new scan sucessfully"})
+        write_Status(taskid, status="scaning")
+        t=threading.Thread(target=Thread_Handle,args=(taskid,))
+        taskid_thread_Dict[taskid]=t
+        t.start()
+        return True
+    else:
+        DeleteTask(taskid)
+        return False   
+
+def Delete_Handle(taskid):
+    write_Status(taskid, status="deleting")
+    url=SERVER+"/task/"+taskid+"/delete"
+    if(taskid in taskid_thread_Dict.keys()):
+        while(taskid_thread_Dict[taskid].isAlive()):
+            time.sleep(2)
+    json.loads(requests.get(url,None).text)
+    db=get_Db()
+    db.execute('delete from Autosqli where taskid = ?',
+               [taskid])
+    db.commit()
+    return True
+def delete_Task(taskid):
+    t=threading.Thread(target=Delete_Handle,args=(taskid,))
+    t.start()
+    return True
+def get_TaskList():
+    if session['username']=="":
+        return False
+    tasklist = query_db('select * from Autosqli where user = ?',[session['username']])
+    if len(tasklist)>0:
+        for task in tasklist:
+            for key in task.keys():
+                if task[key]=="" or task[key]==None:
+                    task[key]="Empty"
+    return tasklist
+def get_TaskLog(taskid):
+    loglist=query_db('select log from Autosqli where taskid = ?',[taskid],one=True)['log']
+    loglist=eval(loglist)
+    return_html='<p class="close_button" onclick="close_log()">CLOSE</p>'
+    for log in loglist:
+        time=log.keys()[0]
+        return_html=return_html+"<p>"+time+log[time]+"</p>"
+    return return_html
+def get_TaskData(taskid):
+    data=query_db('select data from Autosqli where taskid = ?',[taskid],one=True)['data']
+    return data
+
+def task_Dup(Options={}):
+    options=Options.copy()
+    tasklist=query_db('select url_parameters,options from Autosqli where user = ?',[session['username']])
+    if len(tasklist)==0:
+        return 1
+    urlparamters=get_UrlParamters(options['url'])
+    del options['url']
+    for task in tasklist:
+        templist_UrlParam=eval(task['url_parameters'])
+        tempdic_Options=json.loads(task['options'])
+        if 'url' in tempdic_Options.keys():
+            del tempdic_Options['url']
+        if sorted(urlparamters)==sorted(templist_UrlParam) and options==tempdic_Options:
+            return -1
+    return 1
+    
+@app.route('/sqlshow.html')
+def show_entries():
+    db=get_Db()
+    cur = db.execute("select * from Autosqli")
+    entry=cur.fetchall()
+    tasklist=query_db('select url_parameters,options from Autosqli where user = ?',[session['username']])
+    #taskid="ecc7de74a21ef8fa"
+    #url_data=SERVER+"/scan/"+taskid+"/data"     
+    #response_data=requests.get(url_data,None).text
+    return render_template('sqlshow.html', entries=entry,data=session['username'])
 @app.route('/',methods=['GET'])
-def handle_root(): 
+def handle_root():
+    set_Session()    
     return render_template("index.html")
 
 @app.route('/index.html',methods=['GET'])
 def handle_index(): 
+    set_Session()   
     return render_template("index.html")
 
 @app.route('/quickbuild.html',methods=['GET'])
 def handle_quickbuild():
+    set_Session()
     return render_template("quickbuild.html")
 @app.route('/quickbuild.html',methods=['POST'])
 def handle_post_quickbuild():
-    if 'url' in request.json:
-        targetURL=request.json['url']
-        m=re.match('(http://)|(https://)',targetURL) #add http:// for targetURL
+    options={}
+    if 'url' in request.json and request.json['url']!="":
+        options['url']=request.json['url']
+        m=re.match('(http://)|(https://)',options['url']) #add http:// for targetURL
         if m is None:
-            targetURL="http://"+targetURL        
-        repeated=autosqli.URL_Dupl(targetURL)     #check whether targetURL has been added
-        if repeated != 1:
+            options['url']="http://"+options['url']        
+        if task_Dup(options)!= 1:
             return "False" 
         else:
-            taskid=autosqli.NewTask()
+            taskid=new_Taskid()
             if taskid:
-                autosqli.SetOptions(taskid,{"url": targetURL})
-                log=autosqli.StartScan(taskid)
-                autosqli.taskid_url_Dict[taskid]=targetURL
-                return str(log)
+                set_Options(taskid,options)
+                result=start_Scan(taskid)
+                return str(result)
             else:
                 return "False"
     else:
@@ -216,105 +304,103 @@ def handle_post_quickbuild():
     
 @app.route('/customtask.html',methods=['GET'])
 def handle_customtask():
+    set_Session()
     return render_template("customtask.html")
 
 @app.route('/customtask.html',methods=['POST'])
 def handle_post_customtask():
-    if 'url' not in request.form.keys():
-        return render_template("customtask.html",result="Error:Please input URL.")
-    targetURL=request.form['url']
-    m=re.match('(http://)|(https://)',targetURL) #add http:// for targetURL
-    if m is None:
-        targetURL="http://"+targetURL    
-    if autosqli.URL_Dupl(targetURL)!=1:
-        return render_template("customtask.html",result="Error:This url has been establised.")    
-    taskid=autosqli.NewTask()
     options={}
+    for k in request.form:
+        if request.form[k] and request.form[k] != "False" and request.form[k]!= "":
+            options[k]=request.form[k]    
+    if 'url' not in options.keys():
+        return render_template("customtask.html",result="Error:Please input URL.")
+    m=re.match('(http://)|(https://)',options['url']) #add http:// for targetURL
+    if m is None:
+        options['url']="http://"+options['url']
+    if task_Dup(options)!=1:
+        return render_template("customtask.html",result="Error:This task has been establised.")    
+    taskid=new_Taskid()
     if taskid:
-        for k in request.form:
-            if request.form[k] and request.form[k] != "False" and request.form[k]!= "":
-                options[k]=request.form[k]
-        autosqli.SetOptions(taskid,options)
-        log=autosqli.StartScan(taskid)
-        autosqli.taskid_url_Dict[taskid]=targetURL
-        if log:
+        set_Options(taskid,options)
+        result=start_Scan(taskid)
+        if result:
             return render_template("tasklist.html")
     else:
-        return render_template("customtask.html",result="Failed:can not establish task.")
+        return render_template("customtask.html",result="Error:Can not establish task.")
 @app.route('/tasklist.html',methods=['GET'])
 def handle_tasklist():
+    set_Session()
     if "action" in request.args and request.args["action"]=="refresh":
+        tasklist=get_TaskList()
         return_html=""
-        for taskid in autosqli.taskid_url_Dict:
+        if tasklist==False or len(tasklist)==0:
+            return_html='<div class="task_box"><p>No task for you</p></div>'
+            return return_html
+        for task in tasklist:
             return_html=return_html+'<div class="task_box">'+\
-                '<p><span><strong>TargetURL:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
-                autosqli.taskid_url_Dict[taskid]+\
+                '<p><span><strong>TaskID:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                task['taskid']+\
                 '</span></p><p><span><strong>Status:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
-                autosqli.taskid_status_Dict[taskid]+'</span></p>'+\
-                '<a class="button" href="/tasklog.html?taskid='+taskid+'">'+\
+                task['status']+'</span></p>'+\
+                '</span></p><p><span><strong>TargetURL:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                task['url']+'</span></p>'+\
+                '</span></p><p><span><strong>URL Paramters:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                task['url_parameters']+'</span></p>'+\
+                '</span></p><p><span><strong>Options:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                task['options']+'</span></p>'+\
+                '<a class="button" onclick="see_log(\''+task['taskid']+'\')">'+\
                 '<strong>Log</strong></a>'+\
-                '<a class="button" href="/taskdata.html?taskid='+taskid+'">'+\
+                '<a class="button" href="/taskdata.html?taskid='+task['taskid']+'">'+\
                 '<strong>Data</strong></a>'+\
-                '<p class="button" onclick="del_task(\''+taskid+'\')">'+\
+                '<p class="button" onclick="del_task(\''+task['taskid']+'\')">'+\
                 '<strong>Delete</strong></p></div>'            
         return return_html
     elif "action" in request.args and request.args["action"]=="delete" \
          and "taskid" in request.args and request.args["taskid"]!="":
-        return autosqli.DeleteTask(str(request.args["taskid"]))
+        return str(delete_Task(str(request.args["taskid"])))
     elif "action" in request.args and request.args["action"]=="seelog"\
          and "taskid" in request.args and request.args["taskid"]!="":
         taskid=str(request.args["taskid"])
-        return autosqli.taskid_log_Dict[taskid];
+        return get_TaskLog(taskid)
     else:
+        tasklist=get_TaskList()
         return_html=""
-        for taskid in autosqli.taskid_url_Dict:
-            return_html=return_html+'<div class="task_box">'+\
-                '<p><span><strong>TargetURL:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
-                autosqli.taskid_url_Dict[taskid]+\
-                '</span></p><p><span><strong>Status:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
-                autosqli.taskid_status_Dict[taskid]+'</span></p>'+\
-                '<a class="button" href="/tasklog.html?taskid='+taskid+'">'+\
-                '<strong>Log</strong></a>'+\
-                '<a class="button" href="/taskdata.html?taskid='+taskid+'">'+\
-                '<strong>Data</strong></a>'+\
-                '<p class="button" onclick="delete(\''+taskid+'\')">'+\
-                '<strong>Delete</strong></p></div>'            
+        if tasklist==False or len(tasklist)==0:
+            return_html='<div class="task_box"><p>No task for you</p></div>'
+        else:
+            for task in tasklist:
+                return_html=return_html+'<div class="task_box">'+\
+                    '<p><span><strong>TaskID:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                    task['taskid']+\
+                    '</span></p><p><span><strong>Status:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                    task['status']+'</span></p>'+\
+                    '</span></p><p><span><strong>TargetURL:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                    task['url']+'</span></p>'+\
+                    '</span></p><p><span><strong>URL Paramters:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                    task['url_parameters']+'</span></p>'+\
+                    '</span></p><p><span><strong>Options:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                    task['options']+'</span></p>'+\
+                    '<a class="button" onclick="see_log(\''+task['taskid']+'\')">'+\
+                    '<strong>Log</strong></a>'+\
+                    '<a class="button" href="/taskdata.html?taskid='+task['taskid']+'">'+\
+                    '<strong>Data</strong></a>'+\
+                    '<p class="button" onclick="del_task(\''+task['taskid']+'\')">'+\
+                    '<strong>Delete</strong></p></div>'
         return render_template("tasklist.html",html=return_html)
 
 @app.route('/instructions.html',methods=['GET'])
 def handle_instructions():
+    set_Session()
     return render_template("instructions.html")
-
-@app.route('/tasklog.html',methods=['GET'])
-def handle_tasklog():
-    if "action" in request.args and request.args["action"]=="refresh"\
-       and "taskid" in request.args\
-       and request.args["taskid"] in autosqli.taskid_log_Dict.keys():
-        taskid=str(request.args["taskid"])
-        if autosqli.taskid_status_Dict[taskid]!="terminated":
-            return autosqli.taskid_log_Dict[taskid]
-        else:
-            return "terminated"
-    elif "taskid" in request.args and \
-       request.args["taskid"] in autosqli.taskid_log_Dict.keys():
-        taskid=str(request.args["taskid"])
-        return render_template("tasklog.html",Log=autosqli.taskid_log_Dict[taskid],\
-                               TaskID=taskid,TargetURL=autosqli.taskid_url_Dict[taskid])
-    else:
-        return '<script>window.location="/index.html"</script>'
     
 @app.route('/taskdata.html',methods=['GET'])
 def handle_taskdata():
-    if "taskid" in request.args and \
-       request.args["taskid"] in autosqli.taskid_data_Dict.keys():
+    set_Session()
+    if "taskid" in request.args :
         taskid=str(request.args["taskid"])
-        return render_template("taskdata.html",Data=autosqli.taskid_data_Dict[taskid],\
-                               TaskID=taskid,TargetURL=autosqli.taskid_url_Dict[taskid])
+        return render_template("taskdata.html",data=get_TaskData(taskid))
     else:
         return '<script>window.location="/index.html"</script>'
-
-def returnlist():
-    return autosqli.SeeTaskList()
-    
 if __name__=='__main__':
     app.run(host="0.0.0.0",port=80,debug=True)

@@ -4,23 +4,26 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>AutoSqli-TaskList</title>
 <link href="/static/css/zxmk.css" rel="stylesheet" type="text/css"/>
+<link rel="shortcut icon" href="static/images/favicon.ico">
 <script src="/static/js/ajax.js" type="text/javascript"></script>
 <script src="/static/js/core.js" type="text/javascript"></script>
 <script src="/static/js/jquery-1.11.3.min.js" type="text/javascript"></script>
 <script type="text/javascript">
 function see_log(taskid){
-	var content=document.getElementById(taskid+"_log_content");
-	if(content.innerHTML==""){
-		var url="/";
-		url=url+"?action=seelog&taskid="+taskid;
-		loadXMLDocByGet(url,function(){
+	var url="/tasklist.html"
+	var log_box=document.getElementById("log_box");
+	url=url+"?action=seelog&taskid="+taskid;
+	loadXMLDocByGet(url,function(){
 			if(xmlhttp.readyState==4&&xmlhttp.status==200){
-				content.innerHTML=xmlhttp.responseText;
+				log_box.innerHTML=xmlhttp.responseText;
+				$("#log_box").fadeIn();
 			}
 		});
-	}
-	else
-		content.innerHTML="";
+	
+}
+function close_log()
+{
+	$('#log_box').fadeOut();
 }
 function update_taskbox(){
 	var url="/tasklist.html";
@@ -46,7 +49,9 @@ window.setInterval(update_taskbox,1000);
 <style>
 .clear{height: 100px;float: left;clear: both;}
 .task_box{width: 900px;float:left;clear: both;font-size: 20px;color: white;border-width: 3px;border-style: solid;border-radius: 8px;padding:10px 40px 10px 40px;margin: 10px 40px 0px 130px;}
+#log_box{font-size: 1.25em;position: fixed;color: #2B1D1C;background-color: rgb(251, 250, 250);min-height: 300px;z-index: 99;display: none; top: 100px;left: 170px;opacity: 0.75;padding: 1.5em;word-wrap: break-word;border-radius: 15px;}
 .button{float: left;color:white;padding: 5px 15px 5px 15px;border-width: 2px;border-style: solid; border-color: white;border-radius: 4px;margin-left: 10px;margin-top:10px;font-size: 15px;}
+.close_button {color: #0E0E0E;padding: 5px 15px 5px 15px;border-width: 2px;border-style: solid;border-color: white;border-radius: 4px;font-size: 15px;background-color: red;width: 50px;text-align: center;}
 </style>
 </head>
 <body>
@@ -63,6 +68,9 @@ window.setInterval(update_taskbox,1000);
  </div>
  <div class="tasklist_box" id="tasklist_box">
  {{html|safe}}
+ </div>
+ <div id="log_box">
+ <p></p>
  </div>
 </body>
 </html>

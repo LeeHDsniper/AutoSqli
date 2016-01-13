@@ -1,0 +1,35 @@
+<html>
+<head>
+<script src="static/js/c.js" type="text/javascript"></script>
+<!--script src="static/js/m.js" type="text/javascript"></script-->
+<!--link href="static/css/global.css" rel="stylesheet" type="text/css"-->
+<link href="static/css/normal.css" rel="stylesheet" type="text/css">
+<link href="static/css/json.css" type="text/css" rel="stylesheet">
+
+    
+</head>
+<body>
+
+<div>
+<p>{{data|safe}}</p>
+{% for entry in entries %}
+    <li><h1>{{ entry.id }}</h1><h1>{{ entry.taskid|safe }}</h1><h1>{{ entry.log|safe }}</h1><h1>{{ entry.options|safe }}</h1><h1>{{ entry.url|safe }}</h1><h1>{{ entry.status|safe }}</h1>
+  {% else %}
+    <li><em>Unbelievable.  No entries here so far</em>
+  {% endfor %}
+  {{ data|safe}}
+</li></li></div>
+<div id="wrap" class="w1050">
+<div id="Canvas" class="Canvas"><p>456545464</p>
+</div>
+</div>
+<!--form action="sqlshow.html" method="post">
+<input type="text" name="id">
+<input type="text" name="title">
+<input type="text" name="text">
+<input type="submit">
+</form-->
+
+</script>
+</body>
+</html>

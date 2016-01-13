@@ -1,0 +1,50 @@
+/* CSS Document */
+body {margin:0; padding:0; font:12px "å¾®è½¯é›…é»‘",sans-serif;background:#FFFFFF; text-align:center;}
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,blockquote,p{padding:0; margin:0;}
+li{list-style-type:none;}
+img{border:0;}
+ol,ul {list-style:none;}
+.w960{width:960px;text-align:left;}
+.w1050{width:1050px;text-align:left;}
+a{ text-decoration:none;}
+.red{color:#FF0000;}
+.orange{color:#F60; font-weight:bold;}
+.clear{ clear:both; height:0px; width:100%; overflow:hidden;}
+.fl{ float:left;}
+.fr{ float:right;}
+.b10{height:10px;font-size:1px;}
+#wrap{ margin:0px auto;}
+
+/* Nav css */
+ul.my-nav{
+    background-color: #2587d4;
+    height: 38px;
+    line-height: 38px;
+    padding:0 10px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+}
+ul.my-nav li{
+    float: left;
+    line-height: 38px;
+    display: block;
+}
+ul.my-nav li a {
+    font-size: 15px;
+    color: white;
+    display: block;
+    float: left;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-family: "Arial", "Microsoft YaHei", "å¾®è½¯é›…é»‘", "SimSun", "å®‹ä½“";
+}
+
+ul.my-nav li a:hover {
+    background-color: #1261a0;
+    font-weight: bold;
+}
+
+ul.my-nav li a.on, ul.my-nav li a.on:hover {
+    font-weight: bold;
+    background-color: #1261a0;
+}

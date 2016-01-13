@@ -57,12 +57,12 @@ You can use `sudo python AutoSqli.py`(Linux) or `python AutoSqli.py`(Windows)
 
 1. ####More perfect way to exhibit result of scan
 I have tried many ways to convert json data of result to a html table,but when I added two or more parameters to scan,the json data returned by sqlmapapi is so complicated that it is hard to convert.***This is json data of a detect with one parameter***
-![](1pa_data.png)
+![](readme_pic/1pa_data.png)
     
     When I converted this to a html table,the result was acceptable barely.***But when parameter was two:***
-![](2pa_data1.png)
-![](2pa_data2.png)
-![](2pa_data3.png)
+![](readme_pic/2pa_data1.png)
+![](readme_pic/2pa_data2.png)
+![](readme_pic/2pa_data3.png)
 It is so complicated that I have to use these code to convert it:
    
     ***...snip...line 82***
