@@ -1,4 +1,4 @@
-#AutoSqli
+#AutoSqli(update 2016.1.13)
 
 ##What is sqlmap
 > Sqlmap is an open source penetration testing tool that automates the process of detecting and exploiting SQL injection flaws and taking over of database servers. It comes with a powerful detection engine, many niche features for the ultimate penetration tester and a broad range of switches lasting from database fingerprinting, over data fetching from the database, to accessing the underlying file system and executing commands on the operating system via out-of-band connections.
@@ -153,6 +153,27 @@ Now*(2015/11/28)* the only thing I think is useful and worth mentioning is URL D
     * When we finished a test,we would like to generate a pdf file to save all data and log.AutoSqli should can provide a link for download.
 
 ## Epilogue
+
 This project has many flaws (∩_∩)，or I can say it just begin.Maybe it will be more perfect someday in spite of SQL injection is more and more difficult now.I do not have enough knowledge and time to improve it,but I expect someone can make this be a useful tools in SQL injection.
    
-   At last,I am particularly grateful to **Manning**, the Author of the topic:[使用sqlmapapi.py批量化扫描实践](http://drops.wooyun.org/tips/6653?utm_source=tuicool).His topic gave me too much inspiration and experience,*[set_options.txt](set_options.txt)* in my project is copy from [his project](https://github.com/manning23/MSpider).Thanks again.Also thanks to the team members of sqlmap.
+At last,I am particularly grateful to **Manning**, the Author of the topic:[使用sqlmapapi.py批量化扫描实践](http://drops.wooyun.org/tips/6653?utm_source=tuicool).His topic gave me too much inspiration and experience,*[set_options.txt](set_options.txt)* in my project is copy from [his project](https://github.com/manning23/MSpider).Thanks again.Also thanks to the team members of sqlmap.
+#Update 2016.1.13
+##Use Sqlite database
+
+It must be admitted that using dict to restore data is stupid.It triggered many problems like that you can see all tasks on server wether or not you built them.You can check and delete task that doesn't belong to you.Another problem is obviously,these dictionary variables will be too big one day.
+
+Actually sqlite is not a perfect chioce.I'd glad to use MySQL instead of sqlite.But write and read mysql in Flask is not convenient any way.So I use sqlite at last.
+
+The database:Autosqli.db has one table Autosqli.This table has eight columns:
+>|   taskid   |   url    |   url_parameters   |   options   |    log     | status   |         data       |  user  |
+
+##Delete Autosqli class
+
+My original intention of encapsulating Autosqli class is ...Ok,I don't know,maybe I'm affected by C# and want to use 'public','private','protect' on variable and functions.Just forget this stupid idea.
+
+##Delete tasklog.html page
+
+I have been hesitanting a while before doing this cause most of tasks  will create many logs.I don't think it is beautiful to show them on page tasklist,but opening a new page to see logs is inconvenient.At last,I use a div which is hidden at first,and when you click button 'log',it will be visiable.The skills are Ajax and jquery.
+
+##I find a perfect way to show task's data!!![hahhah]
+I know it is shameful to steal other people's code,but... forget this too.I found a [website](http://json.phpddt.com/) that can analyse json data,those pictures above were shotcuted from that website.I copied the [javascript code](/static/js/c.js) which is used to analyse json data from that website and did some modification.I have to salute to the author of these code,you are genius!
