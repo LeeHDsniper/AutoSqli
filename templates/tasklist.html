@@ -35,6 +35,32 @@ function update_taskbox(){
 		}
 	});
 }
+function start_task(taskid){
+	var url="/tasklist.html";
+	url=url+"?action=start&taskid="+taskid;
+	loadXMLDocByGet(url,function(){
+		if(xmlhttp.readyState==4&&xmlhttp.status==200)
+		{
+			if(xmlhttp.responseText=="True")
+				alert("start scan!")
+			else
+				alert("can not start scan")
+		}
+	});
+}
+function stop_task(taskid){
+	var url="/tasklist.html";
+	url=url+"?action=stop&taskid="+taskid;
+	loadXMLDocByGet(url,function(){
+		if(xmlhttp.readyState==4&&xmlhttp.status==200)
+		{
+			if(xmlhttp.responseText=="True")
+				alert("stop scan!")
+			else
+				alert("can not stop scan")
+		}
+	});
+}
 function del_task(taskid){
 	var url="/tasklist.html";
 	url=url+"?action=delete&taskid="+taskid;
@@ -44,7 +70,7 @@ function del_task(taskid){
 		}
 	});
 }
-window.setInterval(update_taskbox,1000);
+window.setInterval(update_taskbox,2000);
 </script>
 <style>
 .clear{height: 100px;float: left;clear: both;}

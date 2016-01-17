@@ -8,5 +8,6 @@ create table Autosqli (
   log string null,
   status string null,
   data string null,
-  user string null
+  user string null,
+  server string null
 );

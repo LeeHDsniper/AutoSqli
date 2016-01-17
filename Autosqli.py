@@ -9,9 +9,10 @@ import string
 import random
 from flask import Flask,render_template,request,session
 
-SERVER="http://127.0.0.1:8775"
-HEADER={'Content-Type': 'application/json'}
-taskid_thread_Dict={}
+SERVER="http://127.0.0.1:8775" #where sqlmapapi.py -s running
+SERVER_List=["http://223.129.28.59:8775","http://127.0.0.1:8775"]
+HEADER={'Content-Type': 'application/json'} #post to sqlmapapi,we should declare http header
+taskid_thread_Dict={}          #this dictionary will store all task's thread id,it will be use at Delete_Handle
 app=Flask(__name__)
 
 #---------------------SQLITE initial start------------------------
@@ -23,29 +24,31 @@ app.config.update(dict(
     PASSWORD='lifeisshort'
 ))
 app.config.from_envvar('AUTOSQLI_SETTINGS', silent=True)
+
 #---------------------this secret key is for session
 app.secret_key = "34$#4564dsfaWEERds/*-()^=sadfWE89SA"
-def connect_Db():
+#---------------------------------------------------
+def connect_Db():#connect database
     rv=sqlite3.connect(app.config['DATABASE'])
     rv.row_factory=sqlite3.Row
     return rv
-def get_Db():
+def get_Db():    #equals to connect_Db()
     sqlite_db=connect_Db()
     return sqlite_db
-def init_Db():
+def init_Db():   #initial database ,this function will rebuild database--Autosqli.db
     with app.app_context():
         db=get_Db()
         with app.open_resource('DATABASE/schema.sql',mode='r') as f:
             db.cursor().executescript(f.read())
         db.commit()
-def query_db(query, args=(), one=False):
+def query_db(query, args=(), one=False): #execute a sql select command parameter 'one' means return one record or all
     db=get_Db()
     cur = db.execute(query, args)
     rv = [dict((cur.description[idx][0], value)
                for idx, value in enumerate(row)) for row in cur.fetchall()]
     return (rv[0] if rv else None) if one else rv
 @app.teardown_appcontext
-def close_Db(error):
+def close_Db(error):#close database
     db=get_Db()
     db.close()
 
@@ -70,9 +73,9 @@ def set_Session():
 def write_Log(taskid,message={}):
     log = query_db('select log from Autosqli where taskid = ?',
                    [taskid], one=True)['log']
-    log=eval(log)
-    log.append(message)
-    db=get_Db()
+    log=eval(log)  #convert str to a list
+    log.append(message)#append message at end of log list
+    db=get_Db()#write log to database
     db.execute('update Autosqli set log = ? where taskid = ?',
                         [str(log),taskid])
     db.commit()    
@@ -125,18 +128,29 @@ def get_UrlParamters(URL):
         option_list[i]=option_list[i].encode('utf-8')
     return option_list   
 #-------------Functions to get parameters in URL end-------------
+def get_Server():
+    tasklist = query_db('select * from Autosqli where status = ?',["running"])
+    server_runningNum_dict={}
+    for server in SERVER_List:
+        server_runningNum_dict[server]=0
+    if len(tasklist)!=0:
+        for task in tasklist:
+            server_runningNum_dict[task['server']]+=1
+        return sorted(server_runningNum_dict.iteritems(),key=lambda t:t[1],reverse=False)[0][0]
+    else:
+        return SERVER_List[0]
 def new_Taskid():
     '''get a new taskid'''
     #url="http://127.0.0.1:8775/task/new"
-    url=SERVER+"/task/new"    
+    server=get_Server()
+    url=server+"/task/new"    
     responseData=json.loads(requests.get(url,None).text)
     if(responseData['success']==True):
         taskid=responseData['taskid']
         log=str([{time.strftime("[*%H:%M:%S]"):"Built a new task successfully"}])
-        #write taskid and log into db
-        db=get_Db()
-        db.execute('insert into Autosqli (taskid, log,user) values (?, ?, ?)',
-                     [taskid,log,session['username']])
+        db=get_Db() #insert a new record into database
+        db.execute('insert into Autosqli (taskid, log,user,server) values (?, ?, ? ,?)',
+                     [taskid,log,session['username'],server])
         db.commit()
         write_Status(taskid, status="not running")
         return taskid
@@ -144,9 +158,11 @@ def new_Taskid():
         return False 
 
 def set_Options(taskid,options={}):
+    #set task's options actually 
     if options is None:
         return False
-    url=SERVER+"/option/"+taskid+"/set"
+    server=query_db('select server from Autosqli where taskid = ?',[taskid],one=True)['server']
+    url=server+"/option/"+taskid+"/set"
     for k in options:
         if options[k]=="False" or options[k]=="":
             del options[k]
@@ -167,11 +183,11 @@ def set_Options(taskid,options={}):
         return False
             
 def Thread_Handle(taskid):
-    url_status=SERVER+"/scan/"+taskid+"/status"
-    url_log=SERVER+"/scan/"+taskid+"/log"
-    url_data=SERVER+"/scan/"+taskid+"/data"
+    server=query_db('select server from Autosqli where taskid = ?',[taskid],one=True)['server']
+    url_status=server+"/scan/"+taskid+"/status"
+    url_log=server+"/scan/"+taskid+"/log"
+    url_data=server+"/scan/"+taskid+"/data"
     db=get_Db()
-   
     response_status=json.loads(requests.get(url_status,None).text)['status']
     db.execute('update Autosqli set status = ? where taskid = ?',
                [response_status,taskid]) 
@@ -190,7 +206,8 @@ def Thread_Handle(taskid):
     return True
     
 def start_Scan(taskid):
-    url=SERVER+"/scan/"+taskid+"/start"
+    server=query_db('select server from Autosqli where taskid = ?',[taskid],one=True)['server']
+    url=server+"/scan/"+taskid+"/start"
     responseData=json.loads(requests.post(url,None,{'Content-Type': 'application/json'}).text)
     if(responseData['success']==True):
         write_Log(taskid,{time.strftime("[*%H:%M:%S]"):"Started a new scan sucessfully"})
@@ -200,12 +217,20 @@ def start_Scan(taskid):
         t.start()
         return True
     else:
-        DeleteTask(taskid)
         return False   
-
+def stop_Scan(taskid):
+    server=query_db('select server from Autosqli where taskid = ?',[taskid],one=True)['server']
+    url=server+"/scan/"+taskid+"/stop"
+    responseData=json.loads(requests.get(url,None).text)
+    if(responseData['success']==True):
+        write_log(taskid,{time.strftime("[*%H:%M:%S]"):"Task was stopped by user"})
+        return True
+    else:
+        return False
 def Delete_Handle(taskid):
     write_Status(taskid, status="deleting")
-    url=SERVER+"/task/"+taskid+"/delete"
+    server=query_db('select server from Autosqli where taskid = ?',[taskid],one=True)['server']
+    url=server+"/task/"+taskid+"/delete"
     if(taskid in taskid_thread_Dict.keys()):
         while(taskid_thread_Dict[taskid].isAlive()):
             time.sleep(2)
@@ -257,16 +282,13 @@ def task_Dup(Options={}):
             return -1
     return 1
 #-------------------A test page----------------------------------   
-#@app.route('/sqlshow.html')
-#def show_entries():
-    #db=get_Db()
-    #cur = db.execute("select * from Autosqli")
-    #entry=cur.fetchall()
-    #tasklist=query_db('select url_parameters,options from Autosqli where user = ?',[session['username']])
-    #taskid="ecc7de74a21ef8fa"
-    #url_data=SERVER+"/scan/"+taskid+"/data"     
-    #response_data=requests.get(url_data,None).text
-    #return render_template('sqlshow.html', entries=entry,data=session['username'])
+@app.route('/sqlshow.html')
+def show_entries():
+    db=get_Db()
+    cur = db.execute("select * from Autosqli")
+    entry=cur.fetchall()
+    tasklist=query_db('select user from Autosqli where taskid = ?',['7abc8e899783367a'],one=True)
+    return render_template('sqlshow.html', entries=entry,data=str(tasklist))
 #-------------------A test page end------------------------------ 
 @app.route('/',methods=['GET'])
 def handle_root():
@@ -295,8 +317,8 @@ def handle_post_quickbuild():
         else:
             taskid=new_Taskid()
             if taskid:
-                set_Options(taskid,options)
-                result=start_Scan(taskid)
+                result=set_Options(taskid,options)
+                #result=start_Scan(taskid)
                 return str(result)
             else:
                 return "False"
@@ -323,8 +345,8 @@ def handle_post_customtask():
         return render_template("customtask.html",result="Error:This task has been establised.")    
     taskid=new_Taskid()
     if taskid:
-        set_Options(taskid,options)
-        result=start_Scan(taskid)
+        result=set_Options(taskid,options)
+        #result=start_Scan(taskid)
         if result:
             return render_template("tasklist.html")
     else:
@@ -350,10 +372,16 @@ def handle_tasklist():
                 task['url_parameters']+'</span></p>'+\
                 '</span></p><p><span><strong>Options:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
                 task['options']+'</span></p>'+\
-                '<a class="button" onclick="see_log(\''+task['taskid']+'\')">'+\
-                '<strong>Log</strong></a>'+\
+                '</span></p><p><span><strong>Server:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                task['server']+'</span></p>'+\
+                '<p class="button" onclick="see_log(\''+task['taskid']+'\')">'+\
+                '<strong>Log</strong></p>'+\
                 '<a class="button" href="/taskdata.html?taskid='+task['taskid']+'">'+\
                 '<strong>Data</strong></a>'+\
+                '<p class="button" onclick="start_task(\''+task['taskid']+'\')">'+\
+                '<strong>Start</strong></p>'+\
+                '<p class="button" onclick="stop_task(\''+task['taskid']+'\')">'+\
+                '<strong>Stop</strong></p>'+\
                 '<p class="button" onclick="del_task(\''+task['taskid']+'\')">'+\
                 '<strong>Delete</strong></p></div>'            
         return return_html
@@ -364,6 +392,16 @@ def handle_tasklist():
          and "taskid" in request.args and request.args["taskid"]!="":
         taskid=str(request.args["taskid"])
         return get_TaskLog(taskid)
+    elif "action" in request.args and request.args["action"]=="start"\
+         and "taskid" in request.args and request.args["taskid"]!="":
+         taskid=str(request.args['taskid'])
+         result=start_Scan(taskid)
+         return str(result)
+    elif "action" in request.args and request.args["action"]=="stop"\
+         and "taskid" in request.args and request.args["taskid"]!="":
+         taskid=str(request.args['taskid'])
+         result=stop_Scan(taskid)
+         return str(result)
     else:
         tasklist=get_TaskList()
         return_html=""
@@ -382,12 +420,18 @@ def handle_tasklist():
                     task['url_parameters']+'</span></p>'+\
                     '</span></p><p><span><strong>Options:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
                     task['options']+'</span></p>'+\
-                    '<a class="button" onclick="see_log(\''+task['taskid']+'\')">'+\
-                    '<strong>Log</strong></a>'+\
+                    '</span></p><p><span><strong>Server:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                    task['server']+'</span></p>'+\
+                    '<p class="button" onclick="see_log(\''+task['taskid']+'\')">'+\
+                    '<strong>Log</strong></p>'+\
                     '<a class="button" href="/taskdata.html?taskid='+task['taskid']+'">'+\
                     '<strong>Data</strong></a>'+\
+                    '<p class="button" onclick="start_task(\''+task['taskid']+'\')">'+\
+                    '<strong>Start</strong></p>'+\
+                    '<p class="button" onclick="stop_task(\''+task['taskid']+'\')">'+\
+                    '<strong>Stop</strong></p>'+\
                     '<p class="button" onclick="del_task(\''+task['taskid']+'\')">'+\
-                    '<strong>Delete</strong></p></div>'
+                    '<strong>Delete</strong></p></div>'  
         return render_template("tasklist.html",html=return_html)
 
 @app.route('/instructions.html',methods=['GET'])
@@ -403,6 +447,6 @@ def handle_taskdata():
         return render_template("taskdata.html",data=get_TaskData(taskid))
     else:
         return '<script>window.location="/index.html"</script>'
-
+init_Db()
 if __name__=='__main__':
     app.run(host="0.0.0.0",port=80,debug=True)
