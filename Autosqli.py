@@ -9,7 +9,6 @@ import string
 import random
 from flask import Flask,render_template,request,session
 
-SERVER="http://127.0.0.1:8775" #where sqlmapapi.py -s running
 SERVER_List=["http://223.129.28.59:8775","http://127.0.0.1:8775"]
 HEADER={'Content-Type': 'application/json'} #post to sqlmapapi,we should declare http header
 taskid_thread_Dict={}          #this dictionary will store all task's thread id,it will be use at Delete_Handle
@@ -141,7 +140,6 @@ def get_Server():
         return SERVER_List[0]
 def new_Taskid():
     '''get a new taskid'''
-    #url="http://127.0.0.1:8775/task/new"
     server=get_Server()
     url=server+"/task/new"    
     responseData=json.loads(requests.get(url,None).text)
@@ -158,7 +156,6 @@ def new_Taskid():
         return False 
 
 def set_Options(taskid,options={}):
-    #set task's options actually 
     if options is None:
         return False
     server=query_db('select server from Autosqli where taskid = ?',[taskid],one=True)['server']
@@ -282,13 +279,13 @@ def task_Dup(Options={}):
             return -1
     return 1
 #-------------------A test page----------------------------------   
-@app.route('/sqlshow.html')
-def show_entries():
-    db=get_Db()
-    cur = db.execute("select * from Autosqli")
-    entry=cur.fetchall()
-    tasklist=query_db('select user from Autosqli where taskid = ?',['7abc8e899783367a'],one=True)
-    return render_template('sqlshow.html', entries=entry,data=str(tasklist))
+#@app.route('/sqlshow.html')
+#def show_entries():
+    #db=get_Db()
+    #cur = db.execute("select * from Autosqli")
+    #entry=cur.fetchall()
+    #tasklist=query_db('select user from Autosqli where taskid = ?',['7abc8e899783367a'],one=True)
+    #return render_template('sqlshow.html', entries=entry,data=str(request.remote_addr))
 #-------------------A test page end------------------------------ 
 @app.route('/',methods=['GET'])
 def handle_root():
@@ -318,7 +315,6 @@ def handle_post_quickbuild():
             taskid=new_Taskid()
             if taskid:
                 result=set_Options(taskid,options)
-                #result=start_Scan(taskid)
                 return str(result)
             else:
                 return "False"
@@ -346,7 +342,6 @@ def handle_post_customtask():
     taskid=new_Taskid()
     if taskid:
         result=set_Options(taskid,options)
-        #result=start_Scan(taskid)
         if result:
             return render_template("tasklist.html")
     else:
