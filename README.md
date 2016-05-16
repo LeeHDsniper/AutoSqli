@@ -23,10 +23,11 @@ Autosqli也就是我所做的这个东西，起因是我们有一门信息安全
 3. 权限：管理员权限
 4. 下载sqlmap项目【注意：在SourceForge上的sqlmap项目下载完后没有sqlmapapi.py这个文件，请在github上[下载](https://github.com/sqlmapproject/sqlmap)】
 5. 解压下载好的压缩文件，并将sqlmap-master文件夹放到/usr/lib/python2.7/下
-6. 打开一个终端，输入`cd /usr/lib/python2.7/sqlmap-master` `sudo python sqlmapapi -s`，这就是sqlmapapi的服务器端
+6. 安装requests模块：pip install requests
+7. 打开一个终端，输入`cd /usr/lib/python2.7/sqlmap-master` `sudo python sqlmapapi -s`，这就是sqlmapapi的服务器端
 
-7. 再打开一个终端，输入`cd /usr/lib/python2.7/sqlmap-master` `sudo python sqlmapapi -c` ，这就是sqlmapapi的客户端
-8. 现在，你可以在客户端的终端上建立sql注入任务了，具体方法--help
+8. 再打开一个终端，输入`cd /usr/lib/python2.7/sqlmap-master` `sudo python sqlmapapi -c` ，这就是sqlmapapi的客户端
+9. 现在，你可以在客户端的终端上建立sql注入任务了，具体方法--help
 
 ##利用sqlmapapi进行扩展的原理
 前面说过，sqlmapapi的服务器端会接收来自客户端的get和post请求，你在sqlmapapi.py -c的终端上所做的事情其实都是以http请求的方式发送给sqlmapapi.py -s的终端上的。我们要做的就是使用web应用程序替代sqlmapapi.py -c。
