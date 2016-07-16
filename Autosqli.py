@@ -3,13 +3,14 @@ import time
 import threading
 import re
 import requests
+import sys
 import os
 import sqlite3
 import string
 import random
 from flask import Flask,render_template,request,session
 
-SERVER_List=["http://223.129.28.59:8775","http://127.0.0.1:8775"]
+SERVER_List=["http://127.0.0.1:8775"]
 HEADER={'Content-Type': 'application/json'} #post to sqlmapapi,we should declare http header
 taskid_thread_Dict={}          #this dictionary will store all task's thread id,it will be use at Delete_Handle
 app=Flask(__name__)
@@ -77,7 +78,7 @@ def write_Log(taskid,message={}):
     db=get_Db()#write log to database
     db.execute('update Autosqli set log = ? where taskid = ?',
                         [str(log),taskid])
-    db.commit()    
+    db.commit()
     return True
 def write_Data(taskid,data=""):
     db=get_Db()
@@ -444,4 +445,4 @@ def handle_taskdata():
         return '<script>window.location="/index.html"</script>'
 init_Db()
 if __name__=='__main__':
-    app.run(host="0.0.0.0",port=80,debug=True)
+    app.run(host="0.0.0.0",port=int(sys.argv[1]),debug=True)
