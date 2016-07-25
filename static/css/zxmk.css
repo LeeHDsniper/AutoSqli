@@ -74,7 +74,11 @@ body{font-family:"Microsoft Yahei"!important;background: url(../images/bg.png) !
 .topLogin{ float:right; background:url(../images/admin.jpg) no-repeat 0px 18px;font-size:8px; color:#5c5c5c; padding-left:10px;}
 .topLogin a{ color:#fff; font-size:14px; padding:0 5px; margin-left:5px;}
 
-
+.clear{height: 100px;float: left;clear: both;}
+.task_box{width: 900px;float:left;clear: both;font-size: 20px;color: white;border-width: 3px;border-style: solid;border-radius: 8px;padding:10px 40px 10px 40px;margin: 10px 40px 0px 130px;}
+#log_box{font-size: 1.25em;position: fixed;color: #2B1D1C;background-color: rgb(251, 250, 250);min-height: 300px;z-index: 99;display: none; top: 100px;left: 170px;opacity: 0.75;padding: 1.5em;word-wrap: break-word;border-radius: 15px;}
+.button{float: left;color:white;padding: 5px 15px 5px 15px;border-width: 2px;border-style: solid; border-color: white;border-radius: 4px;margin-left: 10px;margin-top:10px;font-size: 15px;}
+.close_button {color: #0E0E0E;padding: 5px 15px 5px 15px;border-width: 2px;border-style: solid;border-color: white;border-radius: 4px;font-size: 15px;background-color: red;width: 50px;text-align: center;}
 
 
 

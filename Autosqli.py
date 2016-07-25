@@ -20,7 +20,7 @@ SERVER_List=["http://127.0.0.1:8775"]
 HEADER={'Content-Type': 'application/json'} #post to sqlmapapi,we should declare http header
 taskid_thread_Dict={}          #this dictionary will store all task's thread id,it will be use at Delete_Handle
 app=Flask(__name__)
-
+lock = threading.Lock()
 #---------------------SQLITE initial start------------------------
 app.config.update(dict(
     DATABASE=os.path.join(app.root_path+'/DATABASE', 'Autosqli.db'),
@@ -187,6 +187,7 @@ def set_Options(taskid,options={}):
         return False
             
 def Thread_Handle(taskid):
+    lock.acquire()
     server=query_db('select server from Autosqli where taskid = ?',[taskid],one=True)['server']
     url_status=server+"/scan/"+taskid+"/status"
     url_log=server+"/scan/"+taskid+"/log"
@@ -207,6 +208,7 @@ def Thread_Handle(taskid):
     if response_data==None:
         return False
     write_Data(taskid, response_data)  
+    lock.release()
     return True
     
 def start_Scan(taskid):
@@ -251,6 +253,9 @@ def delete_Task(taskid):
     return True
 
 def save_successresult(options):
+    rebeat = query_db("select url from SuccessTarget where user = ?", [session['username']])
+    if len(rebeat) >0 :
+        return None
     db=get_Db() #insert a new record into database
     db.execute('insert into SuccessTarget (url, data,user) values (?, ?, ?)',
                     [options['url'],options['data'],session['username']])
@@ -305,21 +310,31 @@ def task_Dup(Options={}):
 
 #------------------new Feature-------------------------------
 def gethref(url):
-    headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:47.0) Gecko/20100101 Firefox/47.0"}
-    alist = []
-    req = requests.get(url, headers=headers)
-    domain = "{0}://{1}".format(urlparse(url).scheme, urlparse(url).netloc)
-    soup = BeautifulSoup(req.text, "lxml")
-    for a in soup.find_all('a'):
-        if a.has_attr('href') == False:
-            continue
-        if a['href'].startswith(domain) and a['href'][len(domain)+1:len(domain)+3].find('#') == -1:
-            alist.append(a['href'])
-        elif a['href'].startswith('/'):
-            alist.append(a['href'])
-    if len(alist) == 0:
-        alist.append(url)
-    return alist
+    result = set()
+    def sp(urls):
+        print urls
+        alist = set()
+        headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:47.0) Gecko/20100101 Firefox/47.0"}
+        req = requests.get(url, headers=headers)
+        domain = "{0}://{1}".format(urlparse(url).scheme, urlparse(url).netloc)
+        soup = BeautifulSoup(req.text, "lxml")
+        # import ipdb;ipdb.set_trace()
+        if len(soup.find_all('a')) == 0:
+            alist.add(urls)
+            return 
+        for a in soup.find_all('a'):
+            if a.has_attr('href') == False:
+                continue
+            if a['href'].startswith(domain):
+                alist.add(a['href'])
+            elif a['href'].startswith('http') == False:
+                us = "{0}/{1}/{2}".format(domain, urlparse(url).path, a['href'])
+                alist.add(us)
+        return alist
+    result = tmp = sp(url)
+    for u in  tmp:
+        result = result | sp(u)
+    return result
 
 def GetSuccessTarget():
     slist = {}
@@ -328,7 +343,8 @@ def GetSuccessTarget():
     for task in tasklist:
         try:
             data = flag.search(task['data']).groups()[0]
-            slist[task['url']] = data
+            slist['url'] = task['url']
+            slist['data'] = data
             save_successresult(slist)
         except:
             pass
@@ -493,14 +509,14 @@ def handle_tasklist():
 @app.route('/success.html',methods=['GET'])
 def handle_instructions():
     set_Session()
-    slist = getsuccessresult()
-    return_html="<div class=\"task_box\"><p>Now has {0} url success crack</p></div>".format(len(tasklist))
-    for url in slist.keys():
+    slist = getsuccessresult()  
+    return_html='<div class="task_box"><p>Now has <font color="red">{0}</font> url success crack</p></div>'.format(len(slist))
+    for url in slist:
         return_html=return_html+'<div class="task_box">'+\
-                    '<p><span><strong>URL:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
-                    url+\
-                    '</span></p><p><span><strong>payload:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
-                    slist[url]+'</span></p></div>'
+                    '<p><span><font color="red"><strong>URL:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                    url['url']+\
+                    '</span></font></p><p><span><font color="red"><strong>payload:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                    url['data']+'</font></span></p></div>'
     return render_template("success.html", html=return_html)
     
 @app.route('/taskdata.html',methods=['GET'])
