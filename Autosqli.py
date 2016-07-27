@@ -1,19 +1,26 @@
+#!/usr/bin/env python
+#!-*- coding:utf-8 -*-
+
 import json
 import time
 import threading
 import re
 import requests
+import sys
 import os
 import sqlite3
 import string
 import random
+import datetime
+from urlparse import urlparse
+from bs4 import BeautifulSoup
 from flask import Flask,render_template,request,session
 
-SERVER_List=["http://223.129.28.59:8775","http://127.0.0.1:8775"]
+SERVER_List=["http://127.0.0.1:8775"]
 HEADER={'Content-Type': 'application/json'} #post to sqlmapapi,we should declare http header
 taskid_thread_Dict={}          #this dictionary will store all task's thread id,it will be use at Delete_Handle
 app=Flask(__name__)
-
+lock = threading.Lock()
 #---------------------SQLITE initial start------------------------
 app.config.update(dict(
     DATABASE=os.path.join(app.root_path+'/DATABASE', 'Autosqli.db'),
@@ -65,7 +72,7 @@ def get_RandomStr(length=1):
 #---------------------Set SESSION for user----------------------
 def set_Session():
     if 'username' not in session:
-        session['username']=get_RandomStr(8)
+        session['username'] = datetime.datetime.now().strftime("%Y-%m-%d")
 #---------------------Set SESSION end --------------------------
 
 #-------------Functions to write data to database---------------
@@ -77,7 +84,7 @@ def write_Log(taskid,message={}):
     db=get_Db()#write log to database
     db.execute('update Autosqli set log = ? where taskid = ?',
                         [str(log),taskid])
-    db.commit()    
+    db.commit()
     return True
 def write_Data(taskid,data=""):
     db=get_Db()
@@ -180,6 +187,7 @@ def set_Options(taskid,options={}):
         return False
             
 def Thread_Handle(taskid):
+    lock.acquire()
     server=query_db('select server from Autosqli where taskid = ?',[taskid],one=True)['server']
     url_status=server+"/scan/"+taskid+"/status"
     url_log=server+"/scan/"+taskid+"/log"
@@ -200,6 +208,7 @@ def Thread_Handle(taskid):
     if response_data==None:
         return False
     write_Data(taskid, response_data)  
+    lock.release()
     return True
     
 def start_Scan(taskid):
@@ -237,10 +246,30 @@ def Delete_Handle(taskid):
                [taskid])
     db.commit()
     return True
+
 def delete_Task(taskid):
     t=threading.Thread(target=Delete_Handle,args=(taskid,))
     t.start()
     return True
+
+def save_successresult(options):
+    rebeat = query_db("select url from SuccessTarget where user = ?", [session['username']])
+    if len(rebeat) >0 :
+        return None
+    db=get_Db() #insert a new record into database
+    db.execute('insert into SuccessTarget (url, data,user) values (?, ?, ?)',
+                    [options['url'],options['data'],session['username']])
+    db.commit()
+
+def getsuccessresult():
+    tasklist = query_db('select * from SuccessTarget where user = ?',[session['username']])
+    if len(tasklist)>0:
+        for task in tasklist:
+            for key in task.keys():
+                if task[key]=="" or task[key]==None:
+                    task[key]="Empty"
+    return tasklist
+
 def get_TaskList():
     if session['username']=="":
         return False
@@ -278,6 +307,50 @@ def task_Dup(Options={}):
         if sorted(urlparamters)==sorted(templist_UrlParam) and options==tempdic_Options:
             return -1
     return 1
+
+#------------------new Feature-------------------------------
+def gethref(url):
+    result = set()
+    def sp(urls):
+        print urls
+        alist = set()
+        headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:47.0) Gecko/20100101 Firefox/47.0"}
+        req = requests.get(url, headers=headers)
+        domain = "{0}://{1}".format(urlparse(url).scheme, urlparse(url).netloc)
+        soup = BeautifulSoup(req.text, "lxml")
+        # import ipdb;ipdb.set_trace()
+        if len(soup.find_all('a')) == 0:
+            alist.add(urls)
+            return 
+        for a in soup.find_all('a'):
+            if a.has_attr('href') == False:
+                continue
+            if a['href'].startswith(domain):
+                alist.add(a['href'])
+            elif a['href'].startswith('http') == False:
+                us = "{0}/{1}/{2}".format(domain, urlparse(url).path, a['href'])
+                alist.add(us)
+        return alist
+    result = tmp = sp(url)
+    for u in  tmp:
+        result = result | sp(u)
+    return result
+
+def GetSuccessTarget():
+    slist = {}
+    flag = re.compile(r'payload":\s+"(.*?)"')
+    tasklist = get_TaskList()
+    for task in tasklist:
+        try:
+            data = flag.search(task['data']).groups()[0]
+            slist['url'] = task['url']
+            slist['data'] = data
+            save_successresult(slist)
+        except:
+            pass
+    return slist
+
+
 #-------------------A test page----------------------------------   
 #@app.route('/sqlshow.html')
 #def show_entries():
@@ -338,20 +411,24 @@ def handle_post_customtask():
     if m is None:
         options['url']="http://"+options['url']
     if task_Dup(options)!=1:
-        return render_template("customtask.html",result="Error:This task has been establised.")    
-    taskid=new_Taskid()
-    if taskid:
-        result=set_Options(taskid,options)
-        if result:
-            return render_template("tasklist.html")
-    else:
-        return render_template("customtask.html",result="Error:Can not establish task.")
+        return render_template("customtask.html",result="Error:This task has been establised.")
+    urls = gethref(options['url'])
+    for u in urls:
+        taskid=new_Taskid()
+        if taskid:
+            result = set_Options(taskid,options)
+            start_Scan(taskid)
+        else:
+            return render_template("customtask.html",result="Error:Can not establish task.")
+    return render_template("tasklist.html")
+
 @app.route('/tasklist.html',methods=['GET'])
 def handle_tasklist():
     set_Session()
+    GetSuccessTarget()
     if "action" in request.args and request.args["action"]=="refresh":
         tasklist=get_TaskList()
-        return_html=""
+        return_html="<div class=\"task_box\"><p>Now has {0} tasks to running</p></div>".format(len(tasklist))
         if tasklist==False or len(tasklist)==0:
             return_html='<div class="task_box"><p>No task for you</p></div>'
             return return_html
@@ -399,7 +476,7 @@ def handle_tasklist():
          return str(result)
     else:
         tasklist=get_TaskList()
-        return_html=""
+        return_html="<div class=\"task_box\"><p>Now has {0} tasks to running</p></div>".format(len(tasklist))
         if tasklist==False or len(tasklist)==0:
             return_html='<div class="task_box"><p>No task for you</p></div>'
         else:
@@ -429,10 +506,18 @@ def handle_tasklist():
                     '<strong>Delete</strong></p></div>'  
         return render_template("tasklist.html",html=return_html)
 
-@app.route('/instructions.html',methods=['GET'])
+@app.route('/success.html',methods=['GET'])
 def handle_instructions():
     set_Session()
-    return render_template("instructions.html")
+    slist = getsuccessresult()  
+    return_html='<div class="task_box"><p>Now has <font color="red">{0}</font> url success crack</p></div>'.format(len(slist))
+    for url in slist:
+        return_html=return_html+'<div class="task_box">'+\
+                    '<p><span><font color="red"><strong>URL:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                    url['url']+\
+                    '</span></font></p><p><span><font color="red"><strong>payload:&nbsp;&nbsp;&nbsp;&nbsp;</strong>'+\
+                    url['data']+'</font></span></p></div>'
+    return render_template("success.html", html=return_html)
     
 @app.route('/taskdata.html',methods=['GET'])
 def handle_taskdata():
@@ -444,4 +529,4 @@ def handle_taskdata():
         return '<script>window.location="/index.html"</script>'
 init_Db()
 if __name__=='__main__':
-    app.run(host="0.0.0.0",port=80,debug=True)
+    app.run(host="0.0.0.0",port=int(sys.argv[1]),debug=True)
