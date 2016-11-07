@@ -54,7 +54,6 @@ Autosqli也就是我所做的这个东西，起因是我们有一门信息安全
 我们将在Autosqli中使用python的requests模块对sqlmapapi服务器进行访问，当然还可以使用urllib2，但是requests更加方便。
 
 ##让我们跑起来！
-先不要在乎Autosqli的具体代码，跑起来再说
 1. 在github上下载Autosqli的源代码【[下载地址](https://github.com/LeeHDsniper/AutoSqli)】，或者`git clone git@github.com:LeeHDsniper/AutoSqli.git`
 2. 安装Flask【[如何安装？](http://dormousehole.readthedocs.org/en/latest/installation.html)】，如果你使用的是linux，并且安装好了python的pip的话，直接在终端中输入`sudo pip install flask`就ok。
 3. 运行sqlmapapi的服务器端，最好让它运行在0.0.0.0上，默认的127.0.0.1是本地环回测试地址，如果要使用分布式*（后面介绍）*的话只能使用0.0.0.0。具体命令是这样：`cd /usr/lib/python 2.7/sqlmap-master` `sudo python sqlmapapi.py -s -H 0.0.0.0` 
