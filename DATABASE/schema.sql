@@ -1,4 +1,5 @@
 drop table if exists Autosqli;
+drop table if exists SuccessTarget;
 create table Autosqli (
   id integer primary key autoincrement,
   taskid string not null,
@@ -10,4 +11,10 @@ create table Autosqli (
   data string null,
   user string null,
   server string null
+);
+create table SuccessTarget (
+  id integer primary key autoincrement,
+  url string null,
+  data string null,
+  user string null
 );

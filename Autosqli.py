@@ -216,7 +216,7 @@ def start_Scan(taskid):
     url=server+"/scan/"+taskid+"/start"
     responseData=json.loads(requests.post(url,None,{'Content-Type': 'application/json'}).text)
     if(responseData['success']==True):
-        write_Log(taskid,{time.strftime("[*%H:%M:%S]"):"Started a new scan sucessfully"})
+        write_Log(taskid,{time.strftime("[*%H:%M:%S]"):"Started a new scan successfully"})
         write_Status(taskid, status="scaning")
         t=threading.Thread(target=Thread_Handle,args=(taskid,))
         taskid_thread_Dict[taskid]=t
@@ -310,7 +310,6 @@ def task_Dup(Options={}):
 
 #------------------new Feature-------------------------------
 def gethref(url):
-    result = set()
     def sp(urls):
         print urls
         alist = set()
@@ -331,10 +330,13 @@ def gethref(url):
                 us = "{0}/{1}/{2}".format(domain, urlparse(url).path, a['href'])
                 alist.add(us)
         return alist
-    result = tmp = sp(url)
-    for u in  tmp:
-        result = result | sp(u)
-    return result
+    tmp1 = tmp2 = sp(url)
+    if(tmp2!=None):
+        for u in tmp2:
+            tmp1 = tmp1 | sp(u)
+        return tmp1
+    else:
+        return set([url])
 
 def GetSuccessTarget():
     slist = {}
@@ -410,18 +412,37 @@ def handle_post_customtask():
     m=re.match('(http://)|(https://)',options['url']) #add http:// for targetURL
     if m is None:
         options['url']="http://"+options['url']
-    if task_Dup(options)!=1:
-        return render_template("customtask.html",result="Error:This task has been establised.")
+    
     urls = gethref(options['url'])
     for u in urls:
-        taskid=new_Taskid()
-        if taskid:
-            result = set_Options(taskid,options)
-            start_Scan(taskid)
-        else:
-            return render_template("customtask.html",result="Error:Can not establish task.")
+        options['url']=u
+        if task_Dup(options)==1:#这里去重从逻辑上来更合理，但是没多大意义
+            taskid=new_Taskid()
+            if taskid:
+                result = set_Options(taskid,options)
+            else:
+                return render_template("customtask.html",result="Error:Can not establish task.")
     return render_template("tasklist.html")
-
+@app.route('/spider',methods=['POST'])
+def hander_spider():
+    if 'url' in request.json and request.json['url']!="":
+        url=request.json['url']
+        m=re.match('(http://)|(https://)',url) #add http:// for targetURL
+        if m is None:
+            url="http://"+url
+        try:
+            result=gethref(url)
+        except Exception, e:
+            return "False"
+        if(len(result)!=0):
+            li_list=""
+            for u in result:
+                li_list=li_list+"<li>"+u+"</li>"
+            return li_list
+        else:
+            return "False"
+    else:
+        return "False"
 @app.route('/tasklist.html',methods=['GET'])
 def handle_tasklist():
     set_Session()

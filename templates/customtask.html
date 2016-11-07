@@ -6,40 +6,66 @@
 <link href="/static/css/zxmk.css" rel="stylesheet" type="text/css"/>
 <link rel="shortcut icon" href="static/images/favicon.ico">
 <script src="/static/js/core.js" type="text/javascript"></script>
+<script src="/static/js/ajax.js" type="text/javascript"></script>
 <script src="/static/js/jquery-1.11.3.min.js" type="text/javascript"></script>
 <style>
 
-.options_box{position: absolute;top:100px;left: 150px;border-width:1px;border-radius:4px;border-style: solid;border-color: black;width: 300px;font-size: 20px;color: black;background-color: #b8b8b8;padding: 20px 25px 20px 25px;}
+.options_box{position: absolute;top:100px;left: 150px;border-width:1px;border-radius:4px;border-style: solid;border-color: black;width: 300px;font-size: 20px;color: black;background-color: rgba(184, 184, 184, 0);padding: 20px 25px 20px 25px;}
 .item_title{float:left;clear: left;width: 120px;}
 .radio{float: left;margin-top: 1px; margin-left:10px;width: 20px;height: 20px;}
-.input_text{float: left; margin-bottom: 5px;}
+.input_text{float: left; margin-bottom: 5px;font-size: 20px;}
 hr{float: left;clear: both;width: 100%;margin-top: 5px;border-color: black;}
 .item{float:left;}
 .button{float: left;clear: both;color:white;padding: 10px 20px 10px 20px;border-width: 3px;border-style: solid; border-color: white;border-radius: 4px;margin-left: 80px;margin-top: 40px;font-size: 20px;background-color: green;}
+.spider{position: absolute;top: 100px;left: 600px;border-width:1px;border-radius:4px;border-style: solid;border-color: black;width: 600px;padding: 20px 25px 20px 25px;}
+#spider_input{float: left;clear: left;font-size: 20px;width: 500px;height: 100px;margin-left: 50px}
+#spider_btn{float: left;clear: both;color:white;padding: 10px 20px 10px 20px;border-width: 3px;border-style: solid; border-color: white;border-radius: 4px;margin-left: 80px;margin-top: 40px;font-size: 20px;background-color: green;}
+.spider li{float: left;clear: both;}
 </style>
 <script type="text/javascript">
-	function mouseover(){
-		var btn=document.getElementById("sub_button");
+	function mouseover(element){
+		var btn=document.getElementById(element);
 		btn.style.backgroundColor="#cc6600";
 	}
-	function mousedown(){
-		var btn=document.getElementById("sub_button");
+	function mousedown(element){
+		var btn=document.getElementById(element);
 		btn.style.backgroundColor="#e0e0e0";
 		btn.style.color="black"
 	}
-	function mouseout(){
-		var btn=document.getElementById("sub_button");
+	function mouseout(element){
+		var btn=document.getElementById(element);
 		btn.style.backgroundColor="green";
 	}
 	function check_form(){
 		var url_text=document.getElementById("url_text");
 		if (url_text.value==""){
-			alert()
 			url_text.placeholder="please input URL.";
 			return false;
 		}
 		return true;
 	}
+	function start_spider()
+{                            
+var url_text=document.getElementById('spider_input').value;
+if (url_text=="")
+{
+  alert("爬虫入口URL不能为空");
+  return;
+}  
+var url="spider";                
+  var send_content='{"url":"'+document.getElementById("spider_input").value+'"}';
+  loadXMLDocByPost(send_content,url,function(){
+    if(xmlhttp.readyState==4&&xmlhttp.status==200){
+      if(xmlhttp.responseText=="False"){
+        alert("爬取出错！");
+      }
+      else{
+      	$(".spider").children("li").remove();
+        $(".spider").append(xmlhttp.responseText);
+      }
+    }
+  });
+}
 </script>
 </head>
 <body>
@@ -108,8 +134,13 @@ hr{float: left;clear: both;width: 100%;margin-top: 5px;border-color: black;}
 		<p class="item" style="color:red;">False</p>
 		<hr>
 
-		<input class="button" id="sub_button" type="submit" value="Start Task"  onmouseout="mouseout()" onmouseover="mouseover()" onmousedown="mousedown()" />
+		<input class="button" id="sub_button" type="submit" value="Start Task"  onmouseout="mouseout('sub_button')" onmouseover="mouseover('sub_button')" onmousedown="mousedown('sub_button')" />
 	</form>
+</div>
+<div class="spider">
+<p style="margin-left:50px;font-size:20px;">爬虫入口URL:</p>
+<input type="textarea" name="spider_url" id="spider_input">
+<input type="button" id="spider_btn" value="Spider" style="margin-left:250px;" onmouseout="mouseout('spider_btn')" onmouseover="mouseover('spider_btn')" onmousedown="mousedown('spider_btn')" onclick="start_spider()">
 </div>
 </body>
 </html>
