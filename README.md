@@ -94,3 +94,5 @@ Autosqli这个项目其实很简单，只不过是作为一个简单的python在
 现在，需要做的工作是对自动化注入的进一步完善，另外，Autosqli原本是作为一个课程项目来做的，在项目初期并没有考虑长期的代码架构，现在太多的代码功能没有进行模块化分离，需要对代码进一步重构。
 
 最后，sqlmap的很多参数没有加入到自定义任务功能中，爬虫没有支持post数据的链接爬取，没有支持自定义tamper。这些工作后续会完善。
+
+最后的最后，在使用bs4包的时候，使用pip或者easy_install安装时会报错，最终的错误来自于安装lxml错误，在Windows下安装的文件已经在这里了:[下载lxml安装包](https://github.com/LeeHDsniper/AutoSqli/raw/master/lxml-2.3.win-amd64-py2.7.exe)
